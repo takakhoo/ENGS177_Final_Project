@@ -1,0 +1,14 @@
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+.ipynb_checkpoints/
+.DS_Store
+*.log
+# raw data is reproducible — don't commit the bulk CSVs
+data/raw/*.csv
+# pickled HMMs are reproducible
+data/processed/*.pkl
+data/processed/monthly.csv
+# generated Q-table (large)
+results/Q_star.npy

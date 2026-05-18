@@ -1,0 +1,497 @@
+\documentclass[12pt]{article}
+
+% ========================== Packages ==========================
+\usepackage[margin=1in]{geometry}
+\usepackage{amsmath, amssymb, amsfonts, bm}
+\usepackage{mathtools}
+\usepackage{array, booktabs, multirow}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
+\usepackage{enumitem}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{listings}
+
+% ========================== Page Setup ==========================
+\setlength{\parskip}{0.65em}
+\setlength{\parindent}{0pt}
+\setlength{\headheight}{14pt}
+\pagestyle{fancy}
+\fancyhead[L]{\small ENGS 177: Decision Making Under Uncertainty}
+\fancyhead[R]{\small Homework 3: Taka Khoo}
+\fancyfoot[C]{\thepage}
+
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue,citecolor=blue}
+
+\definecolor{chancefill}{RGB}{210,228,248}
+\definecolor{decfill}{RGB}{205,235,215}
+\definecolor{utilfill}{RGB}{255,240,190}
+\definecolor{codebg}{RGB}{245,245,245}
+
+\titleformat{\section}{\normalfont\Large\bfseries}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries}{\thesubsection}{1em}{}
+
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\EE}{\mathbb{E}}
+\newcommand{\Prb}{\mathbb{P}}
+\newcommand{\argmax}{\operatorname*{arg\,max}}
+\newcommand{\argmin}{\operatorname*{arg\,min}}
+\newcommand{\pa}{\operatorname{pa}}
+\newcommand{\mat}[1]{\bm{#1}}
+
+\tikzset{
+  chance/.style={ellipse,draw,fill=chancefill,minimum width=12mm,minimum height=8mm,thick,inner sep=1pt},
+  decision/.style={rectangle,draw,fill=decfill,minimum width=10mm,minimum height=8mm,thick,inner sep=2pt},
+  utility/.style={diamond,draw,fill=utilfill,minimum width=12mm,minimum height=8mm,thick,inner sep=-2pt,aspect=1.4},
+  state/.style={circle,draw,fill=chancefill,minimum size=10mm,thick,inner sep=1pt}
+}
+
+\lstset{
+  language=Python,
+  basicstyle=\ttfamily\scriptsize,
+  backgroundcolor=\color{codebg},
+  frame=single,
+  breaklines=true,
+  numbers=left,
+  numberstyle=\tiny\color{gray},
+  keywordstyle=\color{blue!70!black},
+  commentstyle=\color{green!50!black},
+  stringstyle=\color{red!60!black},
+  showstringspaces=false,
+  tabsize=4,
+  xleftmargin=1.5em,
+  framexleftmargin=1.5em,
+}
+
+\begin{document}
+
+%=======================================================================
+% TITLE
+%=======================================================================
+\begin{center}
+  {\LARGE \textbf{ENGS 177: Decision Making Under Uncertainty}}\\[0.35em]
+  {\Large \textbf{Homework 3}}\\[0.25em]
+  \textbf{Name:} Taka Khoo \quad\textbullet\quad \textbf{Instructor:} Professor Wesley Marrero\\[0.25em]
+  \textbf{Due:} May 15, 2026
+\end{center}
+\hrule
+\vspace{0.25em}
+
+\footnotesize\textit{Note: Claude (Anthropic) was used to sanity-check reasoning, verify arithmetic, and help polish the \LaTeX{} formatting.}
+\normalsize
+\vspace{0.5em}
+\hrule
+
+%=======================================================================
+\section*{Problem 1: Inventory Management via Finite-Horizon DP \hfill [30 pts]}
+%=======================================================================
+
+\textit{A company needs to manage its inventory over a finite planning horizon of 5~days. Each day, the company can either order new stock or use existing stock to meet demand. There is a holding cost of $h = 1$ per unit per day and an ordering cost of $c = 3$ per unit. The objective is to minimize the total cost over the planning horizon. The initial stock is 5~units. Suppose the expected demand for the next five days is $d_t = [2, 3, 1, 4, 2]$ $\forall t$. Code the appropriate dynamic programming algorithm to obtain the optimal cost and policy.}
+
+\subsection*{Formulation}
+
+We model this as a deterministic finite-horizon dynamic program (Lecture~6, backward induction).
+
+\textbf{State.} $s_t \in \{0, 1, \ldots, S_{\max}\}$: inventory at the \emph{start} of day $t$, before ordering. We set $S_{\max} = 12$ (total demand).
+
+\textbf{Action.} $a_t \geq 0$: units ordered on day $t$ (integer), subject to feasibility $s_t + a_t \geq d_t$.
+
+\textbf{Transition.} $s_{t+1} = s_t + a_t - d_t$.
+
+\textbf{Stage cost.} Ordering plus holding on ending inventory:
+\[
+  g_t(s_t, a_t) = c \cdot a_t + h \cdot (s_t + a_t - d_t) = 3a_t + (s_t + a_t - d_t).
+\]
+
+\textbf{Terminal condition.} $V_6(s) = 0$ for all $s \geq 0$.
+
+\textbf{Bellman equation (backward induction).} For $t = 5, 4, \ldots, 1$:
+\[
+  V_t(s) = \min_{a \geq \max(0,\, d_t - s)} \Big\{ g_t(s, a) + V_{t+1}(s + a - d_t) \Big\}.
+\]
+
+\subsection*{Python implementation}
+
+\begin{lstlisting}
+import numpy as np
+
+T, h, c, s0 = 5, 1, 3, 5
+d = [2, 3, 1, 4, 2]
+max_inv = 12
+
+V = np.full((T + 2, max_inv + 1), np.inf)
+policy = np.full((T + 1, max_inv + 1), -1, dtype=int)
+V[T + 1, :] = 0  # terminal condition
+
+for t in range(T, 0, -1):       # backward induction
+    dt = d[t - 1]
+    for s in range(max_inv + 1):
+        best_cost, best_a = np.inf, 0
+        for a in range(max(0, dt - s), max_inv - s + 1):
+            s_next = s + a - dt
+            if s_next < 0 or s_next > max_inv:
+                continue
+            cost = c * a + h * s_next + V[t + 1, s_next]
+            if cost < best_cost:
+                best_cost, best_a = cost, a
+        V[t, s] = best_cost
+        policy[t, s] = best_a
+\end{lstlisting}
+
+\subsection*{Value function table}
+
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{c|cccccccc}
+\toprule
+$V_t(s)$ & $s=0$ & $s=1$ & $s=2$ & $s=3$ & $s=4$ & $s=5$ & $s=6$ & $s=7$ \\
+\midrule
+$t=6$ & 0  & 0  & 0  & 0  & 0  & 0  & 0  & 0 \\
+$t=5$ ($d_5\!=\!2$) & 6  & 3  & 0  & 1  & 2  & 3  & 4  & 5 \\
+$t=4$ ($d_4\!=\!4$) & 18 & 15 & 12 & 9  & 6  & 4  & 2  & 4 \\
+$t=3$ ($d_3\!=\!1$) & 21 & 18 & 16 & 14 & 12 & 10 & 9  & 8 \\
+$t=2$ ($d_2\!=\!3$) & 30 & 27 & 24 & 21 & 19 & 18 & 17 & 16 \\
+$t=1$ ($d_1\!=\!2$) & 36 & 33 & 30 & 28 & 26 & \textbf{24} & 23 & 23 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\subsection*{Optimal cost and policy}
+
+Starting from $s_1 = 5$, the minimum total cost is $\boxed{V_1(5) = 24}$.
+
+The optimal policy (forward trace):
+
+\begin{center}
+\renewcommand{\arraystretch}{1.15}
+\begin{tabular}{c|ccccc}
+\toprule
+Day $t$ & 1 & 2 & 3 & 4 & 5 \\
+\midrule
+Demand $d_t$ & 2 & 3 & 1 & 4 & 2 \\
+Start inventory $s_t$ & 5 & 3 & 0 & 0 & 0 \\
+Order $a_t^*$ & 0 & 0 & 1 & 4 & 2 \\
+End inventory & 3 & 0 & 0 & 0 & 0 \\
+Day cost & 3 & 0 & 3 & 12 & 6 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Interpretation.} The optimal strategy uses the initial surplus to cover days 1--2 without ordering (incurring only a holding cost of \$3 on day~1). From day~3 onward the stock is depleted, so the company orders exactly the day's demand, minimizing holding cost to zero. The total cost is $3 + 0 + 3 + 12 + 6 = 24$.
+
+%=======================================================================
+\section*{Problem 2: Markov Decision Process \hfill [40 pts]}
+%=======================================================================
+
+\textit{Consider a discrete-time system that moves between states $\{s_1, s_2, s_3, s_4\}$ according to the transition probability matrix:}
+\[
+  P = \begin{bmatrix}
+    0.3 & 0.4 & 0.2 & 0.1 \\
+    0.2 & 0.3 & 0.5 & 0   \\
+    0.1 & 0   & 0.8 & 0.1 \\
+    0.4 & 0   & 0   & 0.6
+  \end{bmatrix}.
+\]
+\textit{At each point in time, you may leave the system and receive a reward of $\gamma = \$20$, or remain in the system and receive a reward \$$i$ if the system occupies state $s_i$. If you decide to remain in the system, its state at the next decision epoch is determined by $P$. Assume a discount rate of $0.9$.}
+
+%-----------------------------------------------------------------------
+\subsection*{(a) MDP Formulation \hfill [5 pts]}
+%-----------------------------------------------------------------------
+
+\textit{Formulate this problem as an MDP.}
+
+Following the Lecture~5 formulation, the MDP is specified by the tuple $(S, A, P, r, \lambda)$:
+
+\begin{itemize}[nosep]
+  \item \textbf{States.} $S = \{s_1, s_2, s_3, s_4, s_0\}$, where $s_0$ is an absorbing ``out'' state entered after leaving.
+  \item \textbf{Actions.} $A(s_i) = \{\text{stay}, \text{leave}\}$ for $i = 1,\ldots,4$; \; $A(s_0) = \{\text{stay}\}$.
+  \item \textbf{Transition probabilities.}
+    \begin{itemize}[nosep]
+      \item $\text{stay in } s_i$: next state drawn from row~$i$ of $P$.
+      \item $\text{leave from } s_i$: deterministic transition to $s_0$.
+      \item $s_0$: self-loop with probability 1.
+    \end{itemize}
+  \item \textbf{Rewards.}
+    $r(s_i, \text{stay}) = i$ for $i=1,\ldots,4$; \;
+    $r(s_i, \text{leave}) = \gamma = 20$; \;
+    $r(s_0, \text{stay}) = 0$.
+  \item \textbf{Discount factor.} $\lambda = 0.9$.
+\end{itemize}
+
+The \textbf{Bellman optimality equation} for the four active states is:
+\[
+  v^*(s_i) = \max\!\left\{\, \gamma,\;\; i + \lambda \sum_{j=1}^{4} P_{ij}\, v^*(s_j) \right\}, \quad i = 1, \ldots, 4.
+\]
+
+%-----------------------------------------------------------------------
+\subsection*{(b) Modified Policy Iteration \hfill [15 pts]}
+%-----------------------------------------------------------------------
+
+\textit{Use modified policy iteration, with $\epsilon = 0.01$ and $m_n = n + 10$ as the sequence of integers in the partial policy evaluation step, to find a stationary policy which maximizes the expected total discounted reward.}
+
+We apply the modified policy iteration algorithm from Lecture~7 (slide~24). Initialize $v^0 = \mat{0}$, $\epsilon = 0.01$, stopping threshold $\frac{\epsilon(1-\lambda)}{2\lambda} = \frac{0.01 \times 0.1}{1.8} \approx 0.000556$.
+
+\textbf{Iteration $n=0$ ($m_0 = 10$):}
+\begin{itemize}[nosep]
+  \item \emph{Policy improvement:} $Q(\text{stay}) = r + 0.9 P v^0 = [1, 2, 3, 4]$. Since $\gamma = 20 > Q_i$ for all $i$, set $\pi_1 = (\text{leave, leave, leave, leave})$.
+  \item $u_0^0 = [20, 20, 20, 20]$, $\|u_0^0 - v^0\|_\infty = 20 > 0.000556$.
+  \item \emph{Partial evaluation} ($m_0 = 10$ steps under $\pi_1$): since leaving gives reward 20 and transitions to the absorbing state, every iterate equals $[20, 20, 20, 20]$.
+  \item $v^1 = [20, 20, 20, 20]$.
+\end{itemize}
+
+\textbf{Iteration $n=1$ ($m_1 = 11$):}
+\begin{itemize}[nosep]
+  \item $Q(\text{stay}) = r + 0.9\, P\, v^1 = [19, 20, 21, 22]$. Since $Q_1 < 20$ and $Q_2 = 20$:\\
+        $\pi_2 = (\text{leave, stay, stay, stay})$.
+  \item $u_1^0 = [20, 20, 21, 22]$, \;
+        $\|u_1^0 - v^1\|_\infty = 2$.
+  \item Partial evaluation (11 steps under $\pi_2$):\\
+        $v^2 = [20.00,\; 22.93,\; 24.83,\; 24.35]$.
+\end{itemize}
+
+\textbf{Iteration $n=2$ ($m_2 = 12$):}
+\begin{itemize}[nosep]
+  \item $Q(\text{stay}) = [21.31,\; 22.96,\; 24.87,\; 24.35]$. All exceed $\gamma=20$:\\
+        $\pi_3 = (\text{stay, stay, stay, stay})$.
+  \item $\|u_2^0 - v^2\|_\infty = 1.31$.
+  \item Partial evaluation (12 steps): $v^3 = [23.33,\; 24.76,\; 26.56,\; 26.79]$.
+\end{itemize}
+
+Subsequent iterations continue with $\pi = (\text{stay, stay, stay, stay})$ and the span norm of $u_n^0 - v^n$ decreases:
+
+\begin{center}
+\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{c|c|cccc|c}
+\toprule
+$n$ & $m_n$ & $v^n(s_1)$ & $v^n(s_2)$ & $v^n(s_3)$ & $v^n(s_4)$ & $\|u_n^0 - v^n\|_\infty$ \\
+\midrule
+3 & 13 & 23.33 & 24.76 & 26.56 & 26.79 & 0.0748 \\
+4 & 14 & 23.91 & 25.34 & 27.13 & 27.37 & 0.0171 \\
+5 & 15 & 24.04 & 25.47 & 27.27 & 27.50 & 0.0035 \\
+6 & 16 & 24.07 & 25.50 & 27.30 & 27.53 & 0.0007 \\
+7 & 17 & 24.08 & 25.51 & 27.30 & 27.54 & \textbf{0.0001} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+At $n = 7$: $\|u_7^0 - v^7\|_\infty = 0.000109 < 0.000556$. \textbf{Stop.}
+
+\[
+  \boxed{\pi_\epsilon = (\text{stay, stay, stay, stay}), \quad v_\epsilon \approx (24.08,\; 25.51,\; 27.30,\; 27.54).}
+\]
+
+The $\epsilon$-optimal policy is to \textbf{stay in every state}.
+
+%-----------------------------------------------------------------------
+\subsection*{(c) Policy Iteration \hfill [15 pts]}
+%-----------------------------------------------------------------------
+
+\textit{Verify your solution to part~(2b) using policy iteration to find a stationary policy which maximizes the expected total discounted reward.}
+
+We apply the exact policy iteration algorithm from Lecture~7.
+
+\textbf{PI Iteration 0:} $\pi_0 = (\text{leave, leave, leave, leave})$.
+\begin{itemize}[nosep]
+  \item \emph{Policy evaluation}: $v^{\pi_0} = [20, 20, 20, 20]$.
+  \item \emph{Improvement}: $Q(\text{stay}) = [19, 20, 21, 22]$. Switch $s_2$ (tie, keep leave), $s_3$, $s_4$ to stay:
+        $\pi_1 = (\text{leave, stay, stay, stay})$.
+\end{itemize}
+
+\textbf{PI Iteration 1:} $\pi_1 = (\text{leave, stay, stay, stay})$.
+\begin{itemize}[nosep]
+  \item \emph{Policy evaluation}: solve $(I - 0.9\, P_{\pi_1})\, v = r_{\pi_1}$ where $r_{\pi_1} = (20, 2, 3, 4)$ and $P_{\pi_1}$ sends $s_1$ to the absorbing state:
+  \[
+    v^{\pi_1} = (20.00,\; 23.06,\; 24.97,\; 24.35).
+  \]
+  \item \emph{Improvement}: $Q(s_1, \text{stay}) = 1 + 0.9 \cdot [0.3(20) + 0.4(23.06) + 0.2(24.97) + 0.1(24.35)] = 21.39 > 20$. Switch $s_1$ to stay: $\pi_2 = (\text{stay, stay, stay, stay})$.
+\end{itemize}
+
+\textbf{PI Iteration 2:} $\pi_2 = (\text{stay, stay, stay, stay})$.
+\begin{itemize}[nosep]
+  \item \emph{Policy evaluation}: solve $(I - 0.9\, P)\, v = r$ where $r = (1, 2, 3, 4)$.
+
+  The system $(I - 0.9P)\, v = r$ is:
+  \[
+    \begin{bmatrix}
+      0.73  & -0.36 & -0.18 & -0.09 \\
+      -0.18 & 0.73  & -0.45 & 0     \\
+      -0.09 & 0     & 0.28  & -0.09 \\
+      -0.36 & 0     & 0     & 0.46
+    \end{bmatrix}
+    \begin{bmatrix} v_1 \\ v_2 \\ v_3 \\ v_4 \end{bmatrix}
+    =
+    \begin{bmatrix} 1 \\ 2 \\ 3 \\ 4 \end{bmatrix}.
+  \]
+  Solving:
+  \[
+    v^{\pi_2} = (24.0775,\; 25.5087,\; 27.3053,\; 27.5389).
+  \]
+  \item \emph{Improvement}: $Q(s_i, \text{stay}) = v^{\pi_2}(s_i) \geq 24.08 > 20 = \gamma$ for all $i$. No state switches. \textbf{Converged.}
+\end{itemize}
+
+\[
+  \boxed{\pi^* = (\text{stay, stay, stay, stay}), \quad v^* = (24.0775,\; 25.5087,\; 27.3053,\; 27.5389).}
+\]
+
+This confirms the modified policy iteration result from part~(b). Both algorithms converge to the same optimal policy: \textbf{always stay}.
+
+%-----------------------------------------------------------------------
+\subsection*{(d) Smallest $\gamma$ for leaving state~2 \hfill [5 pts]}
+%-----------------------------------------------------------------------
+
+\textit{What is the smallest value of $\gamma$ so that it is optimal to leave the system in state~2? [Hint: Rely on your solution approach to~(2c).]}
+
+We use the policy iteration framework from~(2c). Under the all-stay policy, the values $v^*(s_i) = (24.08, 25.51, 27.31, 27.54)$ do not depend on~$\gamma$, since the ``stay'' rewards are fixed at~$\$i$.
+
+As $\gamma$ increases, the first state where leaving becomes optimal is $s_1$ (lowest value, $v^*(s_1) = 24.08$). Once $\gamma > 24.08$, the policy changes to $\pi = (\text{leave}, \text{stay}, \text{stay}, \text{stay})$, which affects the values of $s_2, s_3, s_4$ because transitions to $s_1$ now yield $\gamma$ instead of $v^*(s_1)$.
+
+Under $\pi = (\text{leave } s_1,\; \text{stay } s_2, s_3, s_4)$, the values of the staying states satisfy:
+\begin{align*}
+  v(s_2) &= 2 + 0.9\bigl[0.2\gamma + 0.3\, v(s_2) + 0.5\, v(s_3)\bigr], \\
+  v(s_3) &= 3 + 0.9\bigl[0.1\gamma + 0.8\, v(s_3) + 0.1\, v(s_4)\bigr], \\
+  v(s_4) &= 4 + 0.9\bigl[0.4\gamma + 0.6\, v(s_4)\bigr].
+\end{align*}
+
+Solving for each value as a linear function of $\gamma$:
+\begin{align*}
+  v(s_4) &= \frac{4 + 0.36\gamma}{0.46} = 8.696 + 0.783\,\gamma, \\[4pt]
+  v(s_3) &= \frac{3 + 0.09\gamma + 0.09\, v(s_4)}{0.28} = 13.509 + 0.573\,\gamma, \\[4pt]
+  v(s_2) &= \frac{2 + 0.18\gamma + 0.45\, v(s_3)}{0.73} = 11.067 + 0.600\,\gamma.
+\end{align*}
+
+The agent is indifferent between staying and leaving $s_2$ when $\gamma = v(s_2)$:
+\[
+  \gamma = 11.067 + 0.600\,\gamma \quad\Longrightarrow\quad 0.400\,\gamma = 11.067 \quad\Longrightarrow\quad \gamma^* = \frac{11.067}{0.400} \approx 27.65.
+\]
+
+\textbf{Verification.} At $\gamma^* \approx 27.65$: $v(s_3) = 29.35 > 27.65$ and $v(s_4) = 30.34 > 27.65$, so $s_3$ and $s_4$ still prefer to stay. Also, $Q(s_1, \text{stay}) = 26.44 < 27.65 = \gamma^*$, confirming $s_1$ still prefers to leave. The policy is consistent.
+
+\[
+  \boxed{\gamma^* \approx 27.65.}
+\]
+
+
+%=======================================================================
+\section*{Problem 3: $\varepsilon$-Greedy Multi-Armed Bandit \hfill [20 pts]}
+%=======================================================================
+
+\textit{Consider a four-armed bandit whose actions are labeled $1, 2, 3, 4$. The agent follows an $\varepsilon$-greedy strategy with sample-average action-value estimates, all initialized to $Q_1(a) = 0$ for every action $a$.}
+
+\textit{During the first five interaction steps, the chosen arm and the received reward were recorded as follows:}
+
+\begin{center}
+\begin{tabular}{c|ccccc}
+\textit{time step $t$} & \textit{1} & \textit{2} & \textit{3} & \textit{4} & \textit{5} \\
+\hline
+\textit{arm $a_t$}     & \textit{1} & \textit{2} & \textit{2} & \textit{2} & \textit{3} \\
+\textit{reward $r_t$}  & \textit{1} & \textit{1} & \textit{2} & \textit{2} & \textit{0}
+\end{tabular}
+\end{center}
+
+\textit{With probability $\varepsilon$, the agent explores by picking an arm uniformly at random; otherwise, it exploits by selecting any arm whose current action-value estimate is maximal (breaking ties arbitrarily).}
+
+\medskip
+
+We first track the sample-average $Q$-values (Lecture~8) at each step:
+
+\[
+  Q_{t+1}(a) = \begin{cases}
+    \displaystyle\frac{\sum_{\tau=1}^{t} r_\tau \,\mathbf{1}\{a_\tau = a\}}{N_t(a)}, & \text{if } N_t(a) > 0, \\[6pt]
+    0, & \text{if } N_t(a) = 0,
+  \end{cases}
+\]
+where $N_t(a) = \sum_{\tau=1}^{t} \mathbf{1}\{a_\tau = a\}$ is the number of times arm $a$ has been pulled through step $t$.
+
+\begin{center}
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{c|cccc|c|c}
+\toprule
+$t$ & $Q_t(1)$ & $Q_t(2)$ & $Q_t(3)$ & $Q_t(4)$ & Greedy arm(s) & $a_t$ chosen \\
+\midrule
+1 & 0     & 0     & 0     & 0     & $\{1,2,3,4\}$ (all tied) & 1 \\
+2 & 1     & 0     & 0     & 0     & $\{1\}$              & 2 \\
+3 & 1     & 1     & 0     & 0     & $\{1, 2\}$ (tied)    & 2 \\
+4 & 1     & 1.5   & 0     & 0     & $\{2\}$              & 2 \\
+5 & 1     & 5/3   & 0     & 0     & $\{2\}$              & 3 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+%-----------------------------------------------------------------------
+\subsection*{(a) Time steps where exploration \emph{must} have occurred \hfill [10 pts]}
+%-----------------------------------------------------------------------
+
+\textit{At which time steps must exploration have occurred?}
+
+Exploration \emph{must} have occurred whenever the chosen arm is \textbf{not} among the current greedy arms (i.e., the action cannot have resulted from exploitation):
+
+\begin{itemize}[nosep]
+  \item \textbf{$t = 2$:} The unique greedy arm is $\{1\}$ (with $Q_2(1) = 1 > 0$), but arm~2 was chosen. Exploitation would have selected arm~1, so this \textbf{must} be exploration.
+  \item \textbf{$t = 5$:} The unique greedy arm is $\{2\}$ (with $Q_5(2) = 5/3 > 1 > 0$), but arm~3 was chosen. This \textbf{must} be exploration.
+\end{itemize}
+
+\[
+  \boxed{\text{Exploration must have occurred at } t = 2 \text{ and } t = 5.}
+\]
+
+%-----------------------------------------------------------------------
+\subsection*{(b) Time steps where exploration \emph{could} have occurred \hfill [10 pts]}
+%-----------------------------------------------------------------------
+
+\textit{At which time steps could (but need not) exploration have occurred?}
+
+At any time step, the $\varepsilon$-greedy agent explores with probability $\varepsilon > 0$, choosing uniformly at random from all four arms. Even when the chosen arm happens to coincide with a greedy arm, exploration could still have been the mechanism (the random draw just happened to land on the greedy arm). We check the remaining steps:
+
+\begin{itemize}[nosep]
+  \item \textbf{$t = 1$:} All $Q_1(a) = 0$, so $\{1,2,3,4\}$ are all greedy. Arm~1 was chosen; this could be exploitation (tie broken to arm~1) \emph{or} exploration (random draw landed on arm~1). Exploration is possible but not required.
+  \item \textbf{$t = 3$:} $Q_3(1) = Q_3(2) = 1$, so $\{1, 2\}$ are tied as greedy. Arm~2 was chosen; this could be exploitation (tie broken to arm~2) or exploration. Exploration is possible but not required.
+  \item \textbf{$t = 4$:} $Q_4(2) = 1.5$ is the unique maximum. Arm~2 was chosen; this could be exploitation (greedy selection) or exploration (random draw landed on arm~2 with probability $\varepsilon/4$). Exploration is possible but not required.
+\end{itemize}
+
+\[
+  \boxed{\text{Exploration could (but need not) have occurred at } t = 1,\; t = 3, \text{ and } t = 4.}
+\]
+
+%=======================================================================
+\section*{Problem 4: Term Project Update \hfill [10 pts]}
+%=======================================================================
+
+\textit{Provide a revised formulation of the decision-making problem proposed for your term project and a preliminary solution technique, as applicable.}
+
+%-----------------------------------------------------------------------
+\subsection*{(a) Progress since Homework 2 \hfill [5 pts]}
+%-----------------------------------------------------------------------
+
+\textit{Has your problem formulation changed since you submitted Homework~2? If so, describe how it has changed. If not, describe your progress (e.g., parameterization of model components, data collection, algorithmic development, proof updates) since the submission of your previous homework assignment.}
+
+Our POMDP-based regime-switching asset allocation formulation from Homework~2 \textbf{has not changed}. We retain the same state, action, observation, and transition structure. Since HW2, our progress has been concentrated in three areas:
+
+\begin{enumerate}[nosep]
+  \item \textbf{Parameterization.} We calibrated the hidden Markov model (HMM) for regime dynamics using monthly S\&P~500 and 10-year Treasury returns from 1990--2024. We fit a 3-regime model via the Baum--Welch (EM) algorithm, yielding estimated regime-transition matrix $\hat{P}_{\text{regime}}$, per-regime return means $\hat{\mu}_k$, and covariances $\hat{\Sigma}_k$ for $k \in \{\text{bull, neutral, bear}\}$.
+
+  \item \textbf{Algorithmic development.} We implemented the QMDP approximation solver from HW2's formulation. The underlying fully-observable MDP is solved by value iteration (Lecture~7) on the discretized weight--regime state space. Belief updates use the standard Bayesian filter (Lecture~2) applied to the HMM observation model.
+
+  \item \textbf{Preliminary results.} A backtest over the 2000--2024 out-of-sample period shows the QMDP policy achieves a Sharpe ratio improvement over the static 60/40 benchmark. The regime filter correctly identifies the 2008 crisis and 2020 drawdown as ``bear'' regimes, triggering defensive reallocations.
+\end{enumerate}
+
+%-----------------------------------------------------------------------
+\subsection*{(b) Planned solution strategy \hfill [5 pts]}
+%-----------------------------------------------------------------------
+
+\textit{What is your planned solution strategy? Is it model-based or model-free? Justify.}
+
+Our strategy is \textbf{model-based}. Justification:
+
+\begin{itemize}[nosep]
+  \item \textbf{Known model structure.} We have a parametric model of the environment: the HMM defines the regime-transition dynamics $P(s'\!\mid\! s)$, the observation likelihood $P(o\!\mid\! s)$, and the reward function $R(s, a)$. All are estimated from historical data.
+
+  \item \textbf{QMDP as an approximate solver.} The QMDP approximation (Littman et al., 1995) solves the fully-observable MDP via value iteration and weights the state-action values by the belief. This requires the transition model for the Bellman backup and is inherently model-based.
+
+  \item \textbf{Why not model-free?} Model-free methods (e.g., Q-learning, SARSA from Lectures~9--10) learn from online interaction with the environment. In our financial setting, (i)~the cost of real-world exploration is prohibitive, (ii)~we have decades of historical data sufficient for model calibration, and (iii)~the POMDP structure (hidden regimes) maps naturally to Bayesian filtering, which is a model-based operation. A model-free approach would also struggle with the partial observability, since standard temporal-difference methods assume full state access.
+\end{itemize}
+
+The model-based pipeline is: \emph{calibrate HMM} $\to$ \emph{solve underlying MDP via value iteration} $\to$ \emph{combine with belief filter via QMDP} $\to$ \emph{backtest and sensitivity analysis}.
+
+\end{document}

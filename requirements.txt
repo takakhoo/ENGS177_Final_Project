@@ -1,0 +1,9 @@
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+matplotlib>=3.8
+seaborn>=0.13
+hmmlearn>=0.3
+yfinance>=0.2.40
+pandas-datareader>=0.10
+joblib>=1.3
