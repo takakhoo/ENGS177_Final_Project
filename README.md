@@ -68,17 +68,68 @@ ENGS177_Final_Project/
 ## 4. Quick start
 
 ```bash
-# Setup
-python3 -m venv .venv
-source .venv/bin/activate
+# Setup (one time)
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# Run the pipeline end-to-end
-python experiments/01_fetch_data.py            # downloads FRED + Yahoo CSVs to data/raw/
-python experiments/02_hmm_calibration.py       # fits Gaussian HMM, writes data/processed/hmm.pkl
-python experiments/03_regime_interpretation.py # plots regime probabilities vs NBER recessions
-python experiments/04_qmdp_solve.py            # solves underlying MDP + QMDP, writes results/policy.csv
-python experiments/05_backtest_compare.py      # backtests QMDP vs myopic vs 60/40, writes results/metrics.csv
+# A — Synthetic-data smoke test (no network needed)
+python experiments/00_synthetic_demo.py
+#   -> figures/synthetic_equity_curve.{pdf,png}
+#   -> results/synthetic_metrics.csv
+
+# B — Real-data pipeline (needs internet for FRED + Yahoo)
+python experiments/01_fetch_data.py             # data/processed/monthly.csv
+python experiments/02_hmm_calibration.py        # data/processed/hmm_{2,3,4}state.pkl
+python experiments/03_regime_interpretation.py  # figures/regime_timeline.pdf
+python experiments/04_qmdp_solve.py             # results/{mdp_policy,Q_star}.{csv,npy}
+python experiments/05_backtest_compare.py       # figures/equity_curve.pdf + results/metrics.csv
+
+# C — Multi-regime and gamma-sensitivity experiments (read these for the report)
+python experiments/06_multistate_comparison.py  # figures/multistate_*.pdf
+python experiments/07_gamma_sensitivity.py      # figures/gamma_*.pdf
+```
+
+## 4b. How to load the data and a fitted HMM
+
+Once you've run `experiments/01_fetch_data.py` and `02_hmm_calibration.py`,
+all downstream code can recover the state of the pipeline with two reads:
+
+```python
+import pickle
+from pathlib import Path
+import pandas as pd
+
+REPO = Path(".")
+# Monthly aligned panel (date index, observation columns, asset returns)
+df = pd.read_csv(REPO / "data/processed/monthly.csv")
+dc = df.columns[0]                          # FRED uses 'observation_date'
+df[dc] = pd.to_datetime(df[dc]); df = df.set_index(dc)
+
+# Pre-trained Gaussian HMM (any K in {2, 3, 4})
+with open(REPO / "data/processed/hmm_2state.pkl", "rb") as f:
+    hmm = pickle.load(f)
+
+print(df.tail())
+print("transition matrix:\n", hmm.transmat_)
+print("means:\n", hmm.means_)
+```
+
+The monthly panel columns are documented in
+[`data/README.md`](data/README.md). Models are `hmmlearn.GaussianHMM`
+instances, fully picklable.
+
+## 4c. Compiled artefacts
+
+Two PDFs are committed to the repo (you don't need to rebuild them to read):
+
+- [`report/report.pdf`](report/report.pdf) — 10-page final report.
+- [`presentation/slides.pdf`](presentation/slides.pdf) — 10-slide beamer deck.
+
+To rebuild either:
+
+```bash
+cd report       && tectonic report.tex   # uses Tectonic (Rust TeX engine)
+cd presentation && tectonic slides.tex
 ```
 
 ## 5. Deliverables (mapped to grading rubric)
