@@ -377,11 +377,12 @@ flight-to-quality mechanism: bonds become slightly more attractive in
 stressed periods, on average.
 
 \begin{table}[t]
-\centering\small
+\centering
 \caption{In-sample regime-conditional moments (2-state HMM). All
 return columns are in \% per month.}\label{tab:regime-stats}
-\setlength{\tabcolsep}{4pt}
-\resizebox{\textwidth}{!}{%
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.05}
 \begin{tabular}{lrrrrrr}
 \toprule
 Regime & Months & Mean SPY & SD SPY & Mean AGG & SD AGG & Mean VIX \\
@@ -389,7 +390,7 @@ Regime & Months & Mean SPY & SD SPY & Mean AGG & SD AGG & Mean VIX \\
 Bull (0) & 87 & $\phantom{-}1.16$ & 2.46 & 0.28 & 0.88 & 15.16 \\
 Bear (1) & 48 & $-0.14$           & 6.03 & 0.50 & 1.42 & 27.72 \\
 \bottomrule
-\end{tabular}}
+\end{tabular}
 \end{table}
 
 \subsection{Solver behaviour}\label{sec:results-solver}
@@ -423,12 +424,13 @@ the three policies under the headline setting ($K=2$, $\gamma=2$,
 $\lambda=0.95$, 5~bps cost).
 
 \begin{table}[t]
-\centering\small
+\centering
 \caption{Headline backtest 2003--2026. Static 60/40 vs.~QMDP vs.~myopic
 one-step lookahead. All metrics annualised where applicable.}
 \label{tab:headline}
-\setlength{\tabcolsep}{6pt}
-\resizebox{\textwidth}{!}{%
+\small
+\setlength{\tabcolsep}{7pt}
+\renewcommand{\arraystretch}{1.1}
 \begin{tabular}{lrrrrrr}
 \toprule
 Policy & CAGR & Vol & Sharpe & Max DD & Calmar & Turnover \\
@@ -437,7 +439,7 @@ Static 60/40 & 7.35\% & 9.4\% & 0.81 & $-34.2\%$ & 0.22 & 0.000 \\
 QMDP ($\gamma=2$) & 9.90\% & 14.7\% & 0.72 & $-53.0\%$ & 0.19 & 0.000 \\
 Myopic 12-mo & 13.99\% & 11.3\% & \textbf{1.22} & $-21.1\%$ & \textbf{0.66} & 0.236 \\
 \bottomrule
-\end{tabular}}
+\end{tabular}
 \end{table}
 
 \begin{figure}[t]
@@ -506,13 +508,14 @@ constant across rows (regime-insensitive), but it shifts \emph{column to
 column} as $\gamma$ rises.
 
 \begin{table}[t]
-\centering\small
+\centering
 \caption{Optimal stock/bond split $\pi^\ast(s)$ as a function of regime $s$ and CRRA $\gamma$.
 Within columns the two regimes give the \emph{same} action: the regime label does
 not change the policy. The policy shifts \emph{across} columns as $\gamma$ rises.}
 \label{tab:gamma-policy}
-\setlength{\tabcolsep}{5pt}
-\resizebox{\textwidth}{!}{%
+\small
+\setlength{\tabcolsep}{6pt}
+\renewcommand{\arraystretch}{1.1}
 \begin{tabular}{lccccccc}
 \toprule
 Regime & $\gamma{=}1$ & $\gamma{=}2$ & $\gamma{=}3$ & $\gamma{=}5$ & $\gamma{=}8$ & $\gamma{=}15$ & $\gamma{=}20$ \\
@@ -520,7 +523,7 @@ Regime & $\gamma{=}1$ & $\gamma{=}2$ & $\gamma{=}3$ & $\gamma{=}5$ & $\gamma{=}8
 Bull (0) & 100/0 & 100/0 & 100/0 & 80/20 & 40/60 & 20/80 & 20/80 \\
 Bear (1) & 100/0 & 100/0 & 100/0 & 80/20 & 40/60 & 20/80 & 20/80 \\
 \bottomrule
-\end{tabular}}
+\end{tabular}
 \end{table}
 
 %================================================

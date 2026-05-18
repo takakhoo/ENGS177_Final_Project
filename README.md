@@ -11,7 +11,7 @@ Instructor: Prof. Wesley Marrero, Thayer School of Engineering, Dartmouth Colleg
 | Item | Pages | Link |
 |---|---|---|
 | **Final report** (full math, methods, results) | 10 | [`report/report.pdf`](report/report.pdf) |
-| **Presentation slides** (10-slide overview) | 11 | [`presentation/slides.pdf`](presentation/slides.pdf) |
+| **Presentation slides** (figure-heavy 14-slide deck) | 14 | [`presentation/slides.pdf`](presentation/slides.pdf) |
 | Original proposal (submitted to Canvas) | 2 | [`proposal/ENGS177_Term_Project_Proposal.docx`](proposal/ENGS177_Term_Project_Proposal.docx) |
 
 ## Headline result

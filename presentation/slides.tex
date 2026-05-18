@@ -121,10 +121,27 @@ $\bel_t(s')\propto O(\mathbf{o}_t\mid s')\!\sum_s T(s'\mid s)\,\bel_{t-1}(s).$
 \end{frame}
 
 %-------- Slide 5: Regime calibration --------
-\begin{frame}{HMM regime timeline}
+\begin{frame}{HMM regime timeline: bear bands match crisis dates}
 \centering
-\includegraphics[height=0.75\textheight,keepaspectratio]{../figures/multistate_regime_timeline.pdf}\\[1pt]
-\scriptsize \emph{Worst-mean-SPY regime in red. NBER bars in gray. The 2-state model recovers 2008, 2015--16, 2020--23 stress.}
+\includegraphics[height=0.78\textheight,keepaspectratio]{../figures/multistate_regime_timeline.pdf}
+
+\vspace{-1pt}\scriptsize Bear regime (filled red) tracks GFC 2008--12, China/oil 2015--16, COVID 2020, inflation 2022. NBER bars (gray) sit inside the recovered bands.
+\end{frame}
+
+%-------- Slide 5b: Regime-conditional return moments --------
+\begin{frame}{Regime-conditional returns: a clean bull/bear split}
+\centering
+\includegraphics[height=0.55\textheight,keepaspectratio]{../figures/multistate_returns_bar.pdf}
+
+\smallskip\scriptsize
+\begin{tabular}{lrrr}
+\toprule
+Regime & Mean SPY (\%/mo) & SD SPY (\%/mo) & Mean VIX \\
+\midrule
+Bull (state 0, 87 mo) & $+1.16$ & 2.46 & 15.2 \\
+Bear (state 1, 48 mo) & $-0.14$ & 6.03 & 27.7 \\
+\bottomrule
+\end{tabular}
 \end{frame}
 
 %-------- Slide 6: VI vs PI (formula sheet equations) --------
@@ -165,10 +182,19 @@ solve $(I-\lambda P_\pi)V=r_\pi$, then\\ greedy improvement.\\
 \end{itemize}
 \end{frame}
 
-%-------- Slide 8: Backtest headline --------
-\begin{frame}{Backtest 2003--2026, headline}
+%-------- Slide 8a: Equity curves (figure-heavy) --------
+\begin{frame}{Backtest 2003--2026: equity curves}
+\centering
+\includegraphics[height=0.78\textheight,keepaspectratio]{../figures/multistate_equity_curves.pdf}
+
+\vspace{-1pt}\scriptsize Solid/dashed/dotted: $K=2,3,4$ HMM regime counts. QMDP curves overlap regardless of $K$; myopic (green) dominates by tracking recent first-moment shifts.
+\end{frame}
+
+%-------- Slide 8b: Backtest headline numbers --------
+\begin{frame}{Backtest 2003--2026, headline metrics}
 \centering
 \small
+\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{lrrrrr}
 \toprule
 Policy & CAGR & Vol & Sharpe & Max DD & Calmar \\
@@ -180,18 +206,27 @@ Myopic 12-mo & 13.99\% & 11.3\% & \textbf{1.22} & $-21.1\%$ & \textbf{0.66} \\
 \end{tabular}
 
 \bigskip
-\textbf{Finding.} QMDP under log utility \emph{collapses to 100\% stocks}.
+\textbf{Finding.} QMDP under log utility \emph{collapses to 100\,\% stocks}.
 Risk-tolerance, not regime detection, drives the result. The myopic
-12-month trend follower wins on risk-adjusted terms.
+12-month trend follower wins on every risk-adjusted measure.
 \end{frame}
 
-%-------- Slide 9: Gamma sweep --------
-\begin{frame}{Sensitivity: QMDP unlocks at $\gamma\ge 8$}
+%-------- Slide 9a: Gamma sweep (Sharpe curve) --------
+\begin{frame}{Sensitivity to CRRA $\gamma$: QMDP unlocks at $\gamma\ge 8$}
 \centering
-\includegraphics[height=0.62\textheight,keepaspectratio]{../figures/gamma_sensitivity_sharpe.pdf}
+\includegraphics[height=0.68\textheight,keepaspectratio]{../figures/gamma_sensitivity_sharpe.pdf}
 
 \smallskip
-\scriptsize \textbf{However:} $\pi^\ast(\text{bull})=\pi^\ast(\text{bear})$ at \emph{every} $\gamma$. The gains are risk-tolerance shifts, not regime tilts.
+\scriptsize Static/myopic are flat in $\gamma$ by construction. QMDP crosses static at $\gamma\!\approx\!8$.\\
+\textbf{Caveat:} $\pi^\ast(\text{bull})=\pi^\ast(\text{bear})$ at every $\gamma$ tested.
+\end{frame}
+
+%-------- Slide 9b: Gamma sweep (equity-curve grid) --------
+\begin{frame}{Effect of $\gamma$ on equity curves}
+\centering
+\includegraphics[height=0.76\textheight,keepaspectratio]{../figures/gamma_equity_curves.pdf}
+
+\vspace{-1pt}\scriptsize $\gamma=2$: 100/0 stocks/bonds. $\gamma=5$: 80/20. $\gamma=10$: 40/60. $\gamma=20$: 20/80. Policy shifts bondward across-the-board; never differentiates regimes.
 \end{frame}
 
 %-------- Slide 10: Conclusions + extensions --------
