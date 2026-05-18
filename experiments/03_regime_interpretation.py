@@ -17,13 +17,17 @@ FIG = REPO / "figures"
 RES = REPO / "results"
 FIG.mkdir(exist_ok=True); RES.mkdir(exist_ok=True)
 
-OBS_COLS = ["vix", "term_spread", "hy_oas"]
+OBS_CANDIDATES = ["vix", "term_spread", "hy_oas"]
 N_STATES = 2  # default to two-state baseline; change to 3 for sensitivity run
 TRAIN_END = "2014-12-31"
 
 
 def main() -> None:
-    df = pd.read_csv(DATA / "monthly.csv", parse_dates=["DATE"]).set_index("DATE")
+    df = pd.read_csv(DATA / "monthly.csv")
+    date_col = "DATE" if "DATE" in df.columns else df.columns[0]
+    df[date_col] = pd.to_datetime(df[date_col])
+    df = df.set_index(date_col)
+    OBS_COLS = [c for c in OBS_CANDIDATES if c in df.columns]
     train = df.loc[:TRAIN_END]
     _, obs = standardize_with_train_stats(train, df, OBS_COLS)
     with open(DATA / f"hmm_{N_STATES}state.pkl", "rb") as f:

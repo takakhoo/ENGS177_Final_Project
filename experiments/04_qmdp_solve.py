@@ -42,8 +42,11 @@ def simulate_regime_returns(model, n_sim: int, rng: np.random.Generator) -> dict
     and bond returns. In the full implementation those come from regime-conditional sample
     moments in `regime_returns.csv`. Here we recover them from the data on the fly.
     """
-    df = pd.read_csv(DATA / "monthly.csv", parse_dates=["DATE"]).set_index("DATE")
-    states = model.predict(df[["vix", "term_spread", "hy_oas"]].values)
+    df = pd.read_csv(DATA / "monthly.csv")
+    dc = "DATE" if "DATE" in df.columns else df.columns[0]
+    df[dc] = pd.to_datetime(df[dc]); df = df.set_index(dc)
+    obs_cols = [c for c in ["vix", "term_spread", "hy_oas"] if c in df.columns]
+    states = model.predict(df[obs_cols].values)
     out: dict[int, np.ndarray] = {}
     for k in range(model.n_components):
         mask = states == k

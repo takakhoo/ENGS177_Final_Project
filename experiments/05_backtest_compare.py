@@ -100,11 +100,14 @@ def _gauss_pdf(x: np.ndarray, mu: np.ndarray, cov: np.ndarray) -> float:
 
 
 def main() -> None:
-    df = pd.read_csv(DATA / "monthly.csv", parse_dates=["DATE"]).set_index("DATE")
+    df = pd.read_csv(DATA / "monthly.csv")
+    dc = "DATE" if "DATE" in df.columns else df.columns[0]
+    df[dc] = pd.to_datetime(df[dc]); df = df.set_index(dc)
     with open(DATA / f"hmm_{N_STATES}state.pkl", "rb") as f:
         model = pickle.load(f)
 
-    obs = df[["vix", "term_spread", "hy_oas"]].values
+    obs_cols = [c for c in ["vix", "term_spread", "hy_oas"] if c in df.columns]
+    obs = df[obs_cols].values
     asset_rets = df[["spy_ret", "agg_ret"]]
 
     means = list(model.means_)

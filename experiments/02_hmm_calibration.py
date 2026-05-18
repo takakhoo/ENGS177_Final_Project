@@ -15,12 +15,18 @@ DATA_PROCESSED = REPO / "data" / "processed"
 RESULTS = REPO / "results"
 RESULTS.mkdir(parents=True, exist_ok=True)
 
-OBS_COLS = ["vix", "term_spread", "hy_oas"]
+OBS_CANDIDATES = ["vix", "term_spread", "hy_oas"]
 TRAIN_END = "2014-12-31"   # everything up to 2014 inclusive for training
 
 
 def main() -> None:
-    df = pd.read_csv(DATA_PROCESSED / "monthly.csv", parse_dates=["DATE"]).set_index("DATE")
+    # Date column is named `observation_date` from FRED; alias if needed.
+    df = pd.read_csv(DATA_PROCESSED / "monthly.csv")
+    date_col = "DATE" if "DATE" in df.columns else df.columns[0]
+    df[date_col] = pd.to_datetime(df[date_col])
+    df = df.set_index(date_col)
+    OBS_COLS = [c for c in OBS_CANDIDATES if c in df.columns]
+    print(f"Observation columns: {OBS_COLS}")
     train = df.loc[:TRAIN_END]
     test = df.loc[TRAIN_END:]
     print(f"Train: {train.index.min().date()} → {train.index.max().date()}  ({len(train)} obs)")
