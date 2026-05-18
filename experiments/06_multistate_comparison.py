@@ -27,6 +27,9 @@ sys.path.insert(0, str(REPO))
 
 import matplotlib.pyplot as plt  # noqa: E402
 
+from src.utils.plotting import apply_style, PALETTE, annotate_event  # noqa: E402
+apply_style()
+
 from src.models.mdp import value_iteration, policy_iteration, q_function  # noqa: E402
 from src.models.qmdp import update_belief, stationary_distribution         # noqa: E402
 from src.utils.metrics import summarize                                    # noqa: E402
@@ -202,73 +205,122 @@ def main() -> None:
     print(f"Wrote {RES / 'multistate_policies.csv'} ({len(all_regime_stats)} rows)")
 
     # ---- Figure 1: side-by-side regime timelines (3 panels) ----
-    fig, axes = plt.subplots(3, 1, figsize=(11.5, 8), sharex=True)
+    fig, axes = plt.subplots(3, 1, figsize=(10.5, 7.0), sharex=True)
+    stress_events = [
+        ("2008-10-31", "GFC"),
+        ("2015-09-30", "China"),
+        ("2020-04-30", "COVID"),
+        ("2022-09-30", "Inflation"),
+    ]
     for ax, K in zip(axes, (2, 3, 4)):
         run = runs[K]
-        # Smoothed regime probabilities
-        gamma = run["model"].predict_proba(df[obs_cols].values)
-        # Identify worst-return regime as "bear"
+        proba = run["model"].predict_proba(df[obs_cols].values)
         bear = int(np.argmin([np.mean(df.loc[run["states"] == s, "spy_ret"]) for s in range(K)]))
-        ax.fill_between(df.index, 0, df["nber_recession"], color="0.88", step="post",
-                        label="NBER recession")
+        bear_prob = proba[:, bear]
+        # NBER recession (background)
+        ax.fill_between(df.index, 0, df["nber_recession"], color=PALETTE["nber"],
+                        step="post", alpha=0.9, label="NBER recession", zorder=1)
+        # Bear probability as filled area — this is the headline
+        ax.fill_between(df.index, 0, bear_prob, color=PALETTE["bear"], alpha=0.45,
+                        zorder=3, label=f"P(bear) — state {bear}")
+        ax.plot(df.index, bear_prob, color=PALETTE["bear"], lw=1.6, zorder=4)
+        # Other states as thin lines
         for s in range(K):
-            label = f"P(state {s}){'  [worst SPY]' if s == bear else ''}"
-            ax.plot(df.index, gamma[:, s], lw=1.0,
-                    color=("C3" if s == bear else "C0" if s == 0 else f"C{s + 1}"),
-                    alpha=(0.95 if s == bear else 0.55), label=label)
+            if s == bear:
+                continue
+            color = PALETTE["bull"] if s == 0 else (PALETTE["neutral"] if s == 1 else "#9467bd")
+            ax.plot(df.index, proba[:, s], lw=1.0, color=color, alpha=0.7,
+                    label=f"P(state {s})", zorder=2)
+        # Annotate stress events on top panel only
+        if K == 2:
+            for date_str, label in stress_events:
+                t = pd.Timestamp(date_str)
+                if df.index[0] <= t <= df.index[-1]:
+                    ax.axvline(t, color="0.2", lw=0.5, ls=":", alpha=0.55, zorder=0)
+                    ax.text(t, 1.08, label, rotation=0, fontsize=9, ha="center",
+                            color="0.25", va="bottom", weight="bold")
         ax.set_ylim(-0.02, 1.05)
-        ax.set_ylabel(f"K={K}\nprob")
-        ax.legend(loc="upper left", fontsize=8, ncol=K + 1)
-    axes[0].set_title("Filtered regime probabilities — 2, 3, 4-state HMMs (worst-return regime highlighted)")
+        ax.set_yticks([0, 0.5, 1.0])
+        ax.set_ylabel(f"$K={K}$\nP(state)", fontsize=11)
+        ax.legend(loc="center left", fontsize=8.5, bbox_to_anchor=(1.005, 0.5))
+    axes[0].set_title(
+        "Filtered regime probabilities under $K\\in\\{2,3,4\\}$-state HMMs\n"
+        "Bear regime (worst mean SPY) shown as filled red region.  "
+        "NBER recessions shaded gray.",
+        pad=24,
+    )
     axes[-1].set_xlabel("Date")
     fig.tight_layout()
     fig.savefig(FIG / "multistate_regime_timeline.pdf")
-    fig.savefig(FIG / "multistate_regime_timeline.png", dpi=150)
+    fig.savefig(FIG / "multistate_regime_timeline.png")
     plt.close(fig)
 
     # ---- Figure 2: equity curves overlay ----
-    fig, ax = plt.subplots(figsize=(11.5, 5.5))
+    fig, ax = plt.subplots(figsize=(10.0, 5.2))
     styles = {2: "-", 3: "--", 4: ":"}
-    colors = {"static": "0.4", "qmdp": "C0", "myopic": "C2"}
-    # Plot static once (it doesn't depend on K)
     static_curve = (1 + runs[2]["rets"]["static"]).cumprod()
-    ax.plot(static_curve.index, static_curve.values, lw=2.0, color="0.4",
-            label="static 60/40")
+    ax.plot(static_curve.index, static_curve.values, lw=2.4, color=PALETTE["static"],
+            label="Static 60/40 (benchmark)", zorder=5)
     for K in (2, 3, 4):
         for name in ("qmdp", "myopic"):
             r = runs[K]["rets"][name]
             cum = (1 + r).cumprod()
-            ax.plot(cum.index, cum.values, lw=1.4, ls=styles[K], color=colors[name],
-                    label=f"{name}  (K={K})")
+            ax.plot(cum.index, cum.values, lw=1.6, ls=styles[K], color=PALETTE[name],
+                    alpha=0.85, label=f"{name.upper()}  ($K={K}$)")
+    # Annotate final wealth values for static and best of each
+    end_x = static_curve.index[-1]
+    end_static = static_curve.iloc[-1]
+    end_qmdp_2 = (1 + runs[2]["rets"]["qmdp"]).cumprod().iloc[-1]
+    end_myo_2 = (1 + runs[2]["rets"]["myopic"]).cumprod().iloc[-1]
+    ax.annotate(f"${end_myo_2:.2f}$", xy=(end_x, end_myo_2), xytext=(8, 0),
+                textcoords="offset points", va="center", fontsize=9,
+                color=PALETTE["myopic"], weight="bold")
+    ax.annotate(f"${end_qmdp_2:.2f}$", xy=(end_x, end_qmdp_2), xytext=(8, 0),
+                textcoords="offset points", va="center", fontsize=9,
+                color=PALETTE["qmdp"], weight="bold")
+    ax.annotate(f"${end_static:.2f}$", xy=(end_x, end_static), xytext=(8, 0),
+                textcoords="offset points", va="center", fontsize=9,
+                color=PALETTE["static"], weight="bold")
     ax.set_yscale("log")
-    ax.set_ylabel("Cumulative wealth (log scale)")
-    ax.set_title("Backtest 2003–2026 — equity curves across regime counts")
-    ax.legend(loc="upper left", ncol=2, fontsize=9)
+    ax.set_ylabel("Cumulative wealth (log scale), \\$1 at start of backtest")
+    ax.set_xlabel("Date")
+    ax.set_title(
+        "Out-of-sample backtest 2003–2026 — equity curves\n"
+        "Solid / dashed / dotted: $K=2,3,4$ regimes.  Right labels: terminal wealth."
+    )
+    ax.legend(loc="upper left", ncol=2, fontsize=10)
     fig.tight_layout()
     fig.savefig(FIG / "multistate_equity_curves.pdf")
-    fig.savefig(FIG / "multistate_equity_curves.png", dpi=150)
+    fig.savefig(FIG / "multistate_equity_curves.png")
     plt.close(fig)
 
     # ---- Figure 3: regime-conditional mean returns bar chart ----
-    fig, ax = plt.subplots(figsize=(8, 4.5))
-    x = np.arange(3); width = 0.22
+    fig, ax = plt.subplots(figsize=(9, 5.0))
+    width = 0.22
+    colors_state = [PALETTE["bull"], PALETTE["bear"], PALETTE["neutral"], "#9467bd"]
     for ki, K in enumerate((2, 3, 4)):
         means_per_regime = [s["mean_spy"] for s in runs[K]["regime_stats"]]
-        # Pad to length 4 for plotting alignment
         means_per_regime = means_per_regime + [np.nan] * (4 - len(means_per_regime))
         for i, m in enumerate(means_per_regime):
             if not np.isnan(m):
-                ax.bar(ki + (i - 1.5) * width, m, width=width, color=f"C{i}",
-                       label=f"state {i}" if ki == 0 else None)
+                bar = ax.bar(ki + (i - 1.5) * width, m * 100, width=width,
+                             color=colors_state[i], edgecolor="0.3", lw=0.5,
+                             label=f"state {i}" if ki == 0 else None)
+                ax.text(ki + (i - 1.5) * width, m * 100 + (0.06 if m >= 0 else -0.18),
+                        f"{m*100:.2f}", ha="center", fontsize=8, color="0.2")
     ax.set_xticks(np.arange(3))
-    ax.set_xticklabels([f"K={K}" for K in (2, 3, 4)])
-    ax.set_ylabel("Monthly mean SPY return per regime")
-    ax.axhline(0, color="0", lw=0.5)
-    ax.set_title("Regime-conditional mean SPY return by HMM size")
-    ax.legend(loc="best", fontsize=8)
+    ax.set_xticklabels([f"$K={K}$" for K in (2, 3, 4)])
+    ax.set_ylabel("Mean monthly SPY return per regime (\\%)")
+    ax.set_xlabel("HMM regime count")
+    ax.axhline(0, color="0.4", lw=0.7)
+    ax.set_title(
+        "In-sample regime-conditional mean SPY return\n"
+        "$K=2$ produces a clear bull/bear split; $K=3,4$ collapse extra states"
+    )
+    ax.legend(loc="best", fontsize=10, title="Regime", title_fontsize=10)
     fig.tight_layout()
     fig.savefig(FIG / "multistate_returns_bar.pdf")
-    fig.savefig(FIG / "multistate_returns_bar.png", dpi=150)
+    fig.savefig(FIG / "multistate_returns_bar.png")
     plt.close(fig)
 
     print("\nWrote 3 figures:")

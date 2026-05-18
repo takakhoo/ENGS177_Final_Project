@@ -25,7 +25,7 @@ End-to-end plan from raw data to backtest result. Each numbered step has a one-f
 - `data/raw/spy.csv` (Yahoo, total return adjusted close)
 - `data/raw/agg.csv` (Yahoo, AGG ETF)
 - `data/raw/nber.csv` (FRED USREC)
-- `data/processed/monthly.csv` — single aligned monthly frame:
+- `data/processed/monthly.csv`, single aligned monthly frame:
   `date, vix, term_spread, hy_oas, spy_ret, agg_ret, nber_recession`
 
 **Tools:** `pandas_datareader` (FRED), `yfinance` (Yahoo).
@@ -41,7 +41,7 @@ End-to-end plan from raw data to backtest result. Each numbered step has a one-f
 
 **Outputs:**
 - `data/processed/hmm_2state.pkl`, `hmm_3state.pkl` (pickled `hmmlearn.GaussianHMM` objects).
-- `results/hmm_selection.csv` — table of BIC and held-out log-likelihood per state count.
+- `results/hmm_selection.csv`, table of BIC and held-out log-likelihood per state count.
 
 **Method:**
 1. Split: 1990–2014 train, 2015–present test.
@@ -60,10 +60,10 @@ End-to-end plan from raw data to backtest result. Each numbered step has a one-f
 **Inputs:** `hmm_*.pkl`, `data/processed/monthly.csv`, `data/raw/nber.csv`.
 
 **Outputs:**
-- `figures/regime_timeline.pdf` — filtered regime probabilities (Viterbi or smoothed) overlaid with NBER recession shading.
-- `figures/regime_emissions.pdf` — emission means and 1σ ellipses per state in (VIX, spread) space.
-- `results/regime_durations.csv` — expected dwell time per regime from $\pi P^n$.
-- `results/regime_returns.csv` — average SPY and AGG return per regime (in-sample).
+- `figures/regime_timeline.pdf`, filtered regime probabilities (Viterbi or smoothed) overlaid with NBER recession shading.
+- `figures/regime_emissions.pdf`, emission means and 1σ ellipses per state in (VIX, spread) space.
+- `results/regime_durations.csv`, expected dwell time per regime from $\pi P^n$.
+- `results/regime_returns.csv`, average SPY and AGG return per regime (in-sample).
 
 **Sanity checks before moving on:**
 - Bear regime mean SPY return < 0 (or much lower than bull regime).
@@ -75,26 +75,26 @@ End-to-end plan from raw data to backtest result. Each numbered step has a one-f
 **Inputs:** `hmm_*.pkl`, `data/processed/monthly.csv`.
 
 **Outputs:**
-- `results/mdp_value_function.csv` — $V^*(s)$ per regime.
-- `results/mdp_policy.csv` — $\pi^*_{\text{MDP}}(s)$ greedy policy on regime grid.
-- `results/qmdp_policy.csv` — $\pi_{\text{QMDP}}(b)$ on a discretized belief simplex.
-- `figures/policy_map.pdf` — policy as a function of belief over "bear" regime (1-D slice for 2-state model).
+- `results/mdp_value_function.csv`, $V^*(s)$ per regime.
+- `results/mdp_policy.csv`, $\pi^*_{\text{MDP}}(s)$ greedy policy on regime grid.
+- `results/qmdp_policy.csv`, $\pi_{\text{QMDP}}(b)$ on a discretized belief simplex.
+- `figures/policy_map.pdf`, policy as a function of belief over "bear" regime (1-D slice for 2-state model).
 
 **Method:**
 
-**Step A — Build reward $R(s, a)$.**
+**Step A, Build reward $R(s, a)$.**
 For each regime $s$, expected utility of action $a$ is computed by Monte Carlo from the HMM emission of the asset return distribution. We use log utility $U(W) = \log(1 + a^\top R)$ baseline + CRRA $\gamma \in \{1, 2, 5\}$ sensitivity.
 
 Transaction cost subtracted: $-c \|a - a_{\text{prev}}\|_1$ with $c = 5$ bps. For step A we use no-cost baseline; cost added at policy-evaluation time.
 
-**Step B — Value iteration.**
+**Step B, Value iteration.**
 $$V^{n+1}(s) = \max_{a \in A}\left\{ R(s, a) + \lambda \sum_{s' \in S} T(s' | s)\, V^n(s') \right\}$$
 Stop when $\|V^{n+1} - V^n\|_\infty < \varepsilon(1-\lambda)/(2\lambda)$. Default $\lambda = 0.95$, $\varepsilon = 1e-4$.
 
-**Step C — Cross-check with policy iteration.**
+**Step C, Cross-check with policy iteration.**
 Solve $(I - \lambda P_\pi) v = r_\pi$ and improve. Verify identical greedy policy.
 
-**Step D — QMDP.**
+**Step D, QMDP.**
 At each backtest decision point with belief $b_t$:
 $$\pi_{\text{QMDP}}(b_t) = \argmax_a \sum_s b_t(s) Q^*_{\text{MDP}}(s, a).$$
 
@@ -103,11 +103,11 @@ $$\pi_{\text{QMDP}}(b_t) = \argmax_a \sum_s b_t(s) Q^*_{\text{MDP}}(s, a).$$
 **Inputs:** `data/processed/monthly.csv`, `hmm_*.pkl`, `results/qmdp_policy.csv`.
 
 **Outputs:**
-- `results/backtest_equity.csv` — cumulative wealth per policy per month.
-- `results/metrics.csv` — table of CAGR, vol, Sharpe, MDD, Calmar, turnover.
-- `figures/equity_curve.pdf` — log-scale cumulative return for the three policies.
-- `figures/drawdown.pdf` — drawdown series.
-- `figures/turnover.pdf` — turnover over time, per policy.
+- `results/backtest_equity.csv`, cumulative wealth per policy per month.
+- `results/metrics.csv`, table of CAGR, vol, Sharpe, MDD, Calmar, turnover.
+- `figures/equity_curve.pdf`, log-scale cumulative return for the three policies.
+- `figures/drawdown.pdf`, drawdown series.
+- `figures/turnover.pdf`, turnover over time, per policy.
 
 **Method:**
 
@@ -138,7 +138,7 @@ A 4-way grid over:
 
 24 cells. Each cell yields a full backtest. We report a heatmap of Sharpe by (n_regimes, gamma) at the headline cost level.
 
-## 7. Monte Carlo validation (stretch — `experiments/07_montecarlo_validation.py`)
+## 7. Monte Carlo validation (stretch, `experiments/07_montecarlo_validation.py`)
 
 Simulate 1000 paths of length 25 years from the fitted HMM. Run QMDP policy on each. Compare distribution of Sharpe to live backtest. Confirms live backtest is not an artifact of one realized path.
 

@@ -31,9 +31,9 @@
 
 \title{Regime-Switching Asset Allocation via a POMDP}
 \subtitle{Type: New Application}
-\author{Dario Blanco Morales \and Even Hogberget \and \\ Kyle D. Ledda-Lewaren \and Taka Khoo}
-\institute{ENGS 177 --- Decision Making Under Uncertainty \\ Thayer School of Engineering, Dartmouth College}
-\date{May 2026}
+\author{Dario Blanco Morales \and Even Hogberget \\ Kyle D. Ledda-Lewaren \and Taka Khoo}
+\institute{\footnotesize ENGS 177, Decision Making Under Uncertainty \\ \footnotesize Thayer School of Engineering, Dartmouth College}
+\date{\footnotesize May 2026}
 
 \begin{document}
 
@@ -53,9 +53,9 @@ this in two ways:
 \end{itemize}
 
 \medskip
-\textbf{Question.} Can a decision-theoretic regime overlay --- a POMDP
-solved end-to-end on macroeconomic observables --- beat a static benchmark
-after realistic frictions?
+\textbf{Question.} Can a decision-theoretic regime overlay, a POMDP solved
+end-to-end on macroeconomic observables, beat a static benchmark after
+realistic frictions?
 \end{frame}
 
 %-------- Slide 2: Why POMDP (one decision/lecture tree) --------
@@ -66,14 +66,15 @@ after realistic frictions?
 \midrule
 Decision tree & Tree explodes with horizon; no shared state. \\
 Influence diagram & Same blow-up; not natural for repeated rebalance. \\
-Fully-observable MDP & Requires knowing the regime --- but it's \emph{latent}. \\
+Fully-observable MDP & Requires knowing the regime, but it is \emph{latent}. \\
 \textcolor{cb}{\textbf{POMDP}} & \textcolor{cb}{Hidden state, Bayesian belief, QMDP for tractable control.} \\
 \bottomrule
 \end{tabular}
 
 \medskip
-\textbf{The course material this exercises:} Lec.~2 Bayes filter; Lec.~3
-Markov chain; Lec.~5--7 MDPs (Bellman, VI, PI); Lec.~7 structured policies.
+\textbf{Tools assembled:} Bayesian forward filter; Markov chain over regimes;
+infinite-horizon Bellman recursion solved by value iteration and exact
+policy iteration; structural results for monotone policies.
 \end{frame}
 
 %-------- Slide 3: POMDP tuple --------
@@ -89,7 +90,7 @@ Markov chain; Lec.~5--7 MDPs (Bellman, VI, PI); Lec.~7 structured policies.
   \item[$\lambda=0.95$] monthly discount.
 \end{description}
 \medskip
-\textbf{Belief update} (Lec.~2):
+\textbf{Belief update (Bayesian filter):}
 $\bel_t(s')\propto O(\mathbf{o}_t\mid s')\!\sum_s T(s'\mid s)\,\bel_{t-1}(s).$
 \end{frame}
 
@@ -135,12 +136,12 @@ V^\ast(s)=\max_{\mathbf{a}\in\action}\Bigl\{R(s,\mathbf{a})+\lambda\!\sum_{s'\in
 
 \begin{columns}[T]
 \begin{column}{0.46\linewidth}
-\textbf{Value iteration} (Lec.~7):\\
+\textbf{Value iteration:}\\
 $V^{(n+1)}=LV^{(n)}$, stop at\\
 $\lVert V^{(n+1)}-V^{(n)}\rVert_\infty<\frac{\varepsilon(1-\lambda)}{2\lambda}$.\\
 \textbf{125 iters} for $\lambda=0.95$, $\varepsilon=10^{-4}$.
 \end{column}\begin{column}{0.46\linewidth}
-\textbf{Policy iteration} (Lec.~7):\\
+\textbf{Policy iteration:}\\
 solve $(I-\lambda P_\pi)V=r_\pi$, then\\ greedy improvement.\\
 \textbf{2 iters} to converge.
 \end{column}
@@ -179,19 +180,18 @@ Myopic 12-mo & 13.99\% & 11.3\% & \textbf{1.22} & $-21.1\%$ & \textbf{0.66} \\
 \end{tabular}
 
 \bigskip
-\textbf{Finding.} QMDP under log utility \emph{collapses to 100\% stocks} ---
-risk-tolerance, not regime detection, drives the result. Myopic
+\textbf{Finding.} QMDP under log utility \emph{collapses to 100\% stocks}.
+Risk-tolerance, not regime detection, drives the result. The myopic
 12-month trend follower wins on risk-adjusted terms.
 \end{frame}
 
 %-------- Slide 9: Gamma sweep --------
 \begin{frame}{Sensitivity: QMDP unlocks at $\gamma\ge 8$}
 \centering
-\includegraphics[width=0.78\linewidth]{../figures/gamma_sensitivity_sharpe.pdf}\\[1pt]
-\small \emph{QMDP Sharpe crosses static-60/40 at $\gamma\approx 8$; saturates near 0.89 by $\gamma=15$.}
+\includegraphics[height=0.62\textheight,keepaspectratio]{../figures/gamma_sensitivity_sharpe.pdf}
 
-\medskip
-\textbf{However:} $\pi^\ast(\text{bull})=\pi^\ast(\text{bear})$ at \emph{every} $\gamma$ we tested. The gains are risk-tolerance shifts, not regime tilts.
+\smallskip
+\scriptsize \textbf{However:} $\pi^\ast(\text{bull})=\pi^\ast(\text{bear})$ at \emph{every} $\gamma$. The gains are risk-tolerance shifts, not regime tilts.
 \end{frame}
 
 %-------- Slide 10: Conclusions + extensions --------

@@ -6,7 +6,7 @@
 
 ## 1. Problem
 
-A long-only investor holds a portfolio of two assets — equities (SPY) and bonds (AGG) — and must choose, at each monthly rebalance date, the weights $a_t = (w_t^{\text{stock}}, w_t^{\text{bond}})$ with $w^{\text{stock}}_t + w^{\text{bond}}_t = 1$, $w^{\text{stock}}_t, w^{\text{bond}}_t \geq 0$.
+A long-only investor holds a portfolio of two assets, equities (SPY) and bonds (AGG), and must choose, at each monthly rebalance date, the weights $a_t = (w_t^{\text{stock}}, w_t^{\text{bond}})$ with $w^{\text{stock}}_t + w^{\text{bond}}_t = 1$, $w^{\text{stock}}_t, w^{\text{bond}}_t \geq 0$.
 
 Asset returns are *non-stationary*: they are drawn from a different distribution depending on the latent macro-financial regime (broadly: an *expansionary* regime with low volatility and positive drift, vs. a *stress* regime with elevated volatility and compressed term spreads). The investor cannot observe the regime directly; they observe noisy macro-financial proxies (VIX, term spread, high-yield OAS).
 
@@ -16,9 +16,9 @@ Asset returns are *non-stationary*: they are drawn from a different distribution
 
 Three observations together force the POMDP formulation:
 
-1. The **regime is latent** — we never see it directly.
-2. The **observation stream is noisy and partial** — the same VIX value can occur in either regime.
-3. The **decision is sequential** — current allocation affects future wealth, and current information updates beliefs about future regimes.
+1. The **regime is latent**, we never see it directly.
+2. The **observation stream is noisy and partial**, the same VIX value can occur in either regime.
+3. The **decision is sequential**, current allocation affects future wealth, and current information updates beliefs about future regimes.
 
 A POMDP $(\mathcal{T}, S, A, T, \Omega, O, R, \lambda)$ formalizes exactly this: hidden state, observation channel, belief updates, sequential reward.
 
@@ -26,7 +26,7 @@ A POMDP $(\mathcal{T}, S, A, T, \Omega, O, R, \lambda)$ formalizes exactly this:
 
 - **States $S$** (latent regimes): two-state baseline $\{s_\text{expansion}, s_\text{stress}\}$, three-state variant $\{\text{bull}, \text{neutral}, \text{bear}\}$.
 - **Actions $A$**: discrete portfolio grid, e.g. $\{(0.0, 1.0), (0.2, 0.8), (0.4, 0.6), (0.6, 0.4), (0.8, 0.2), (1.0, 0.0)\}$.
-- **Transition $T(s' | s)$**: HMM transition matrix estimated by Baum–Welch on monthly observation series. *No action effect* — the market is exogenous to our portfolio choice.
+- **Transition $T(s' | s)$**: HMM transition matrix estimated by Baum–Welch on monthly observation series. *No action effect*, the market is exogenous to our portfolio choice.
 - **Observation space $\Omega$**: continuous vector $o_t = (\text{VIX}_t, \text{term-spread}_t, \text{HY-OAS}_t)$, standardized.
 - **Observation function $O(o | s)$**: per-state Gaussian emission learned by HMM, $o_t | s_t = k \sim \mathcal{N}(\mu_k, \Sigma_k)$.
 - **Belief state $b_t \in \Delta^{|S|-1}$**: posterior over regimes given the observation history.
@@ -37,20 +37,20 @@ A POMDP $(\mathcal{T}, S, A, T, \Omega, O, R, \lambda)$ formalizes exactly this:
 
 ## 4. Solution approach
 
-**Step 1 — HMM calibration.** Fit Gaussian HMM on $(\text{VIX}, \text{spread}, \text{HY-OAS})$ via Baum–Welch (EM). Model selection by BIC and out-of-sample log-likelihood. Initialize from k-means with multiple restarts.
+**Step 1, HMM calibration.** Fit Gaussian HMM on $(\text{VIX}, \text{spread}, \text{HY-OAS})$ via Baum–Welch (EM). Model selection by BIC and out-of-sample log-likelihood. Initialize from k-means with multiple restarts.
 
-**Step 2 — Underlying MDP solution.** Solve the *fully-observable* infinite-horizon discounted MDP
+**Step 2, Underlying MDP solution.** Solve the *fully-observable* infinite-horizon discounted MDP
 $$V^*(s) = \max_{a \in A}\left\{ R(s, a) + \lambda \sum_{s' \in S} T(s' | s)\, V^*(s') \right\}$$
 by **value iteration** (Lec 7) on the discrete regime × action grid. Output: $Q^*_{\text{MDP}}(s, a)$.
 
-**Step 3 — QMDP approximation.** At decision time $t$ with belief $b_t$,
+**Step 3, QMDP approximation.** At decision time $t$ with belief $b_t$,
 $$\pi_{\text{QMDP}}(b_t) = \argmax_{a \in A} \sum_{s \in S} b_t(s)\, Q^*_{\text{MDP}}(s, a).$$
 This is exact when $b_t$ is a delta (fully-observable) and a sensible heuristic when uncertainty is moderate.
 
-**Step 4 — Belief update (Bayesian filter, Lec 2).** Given prior $b_{t-1}$, action $a_{t-1}$, observation $o_t$,
+**Step 4, Belief update (Bayesian filter, Lec 2).** Given prior $b_{t-1}$, action $a_{t-1}$, observation $o_t$,
 $$b_t(s') \propto O(o_t | s') \sum_s T(s' | s)\, b_{t-1}(s).$$
 
-**Step 5 — Backtest.** Walk-forward evaluation with **annual HMM refitting** to avoid look-ahead bias. Compare three policies: QMDP, myopic one-step-lookahead, static 60/40.
+**Step 5, Backtest.** Walk-forward evaluation with **annual HMM refitting** to avoid look-ahead bias. Compare three policies: QMDP, myopic one-step-lookahead, static 60/40.
 
 ## 5. Comparator policies
 
@@ -82,9 +82,9 @@ All time series aligned at monthly frequency, end-of-month. Sample: 1990–prese
 
 ## 8. Project flow (week by week)
 
-- **Wk 3–4:** Proposal, problem definition, data assembly — done.
-- **Wk 5–6:** HMM calibration, regime interpretation — HW2 / HW3.
-- **Wk 7–8:** QMDP solver + initial backtest — HW3, now.
+- **Wk 3–4:** Proposal, problem definition, data assembly, done.
+- **Wk 5–6:** HMM calibration, regime interpretation, HW2 / HW3.
+- **Wk 7–8:** QMDP solver + initial backtest, HW3, now.
 - **Wk 9:** Sensitivity analysis, write-up, slides.
 - **Wk 10:** Final presentation, report, peer review.
 
@@ -101,8 +101,8 @@ All time series aligned at monthly frequency, end-of-month. Sample: 1990–prese
 
 ## 10. Open questions for the team
 
-1. CRRA risk-aversion parameter $\gamma$ — fix at 2 or sweep $\{1, 2, 5\}$?
-2. Two-state vs. three-state HMM — pick one for headline result, show the other in sensitivity?
+1. CRRA risk-aversion parameter $\gamma$, fix at 2 or sweep $\{1, 2, 5\}$?
+2. Two-state vs. three-state HMM, pick one for headline result, show the other in sensitivity?
 3. Should we include cash (T-bills) as a third action dimension, or stay with stock/bond only?
-4. Transaction cost — flat 5 bps or scaled by turnover regime?
-5. What's our "stretch" experiment if QMDP works? — point-based VI (PBVI)? Online belief-space tree search?
+4. Transaction cost, flat 5 bps or scaled by turnover regime?
+5. What's our "stretch" experiment if QMDP works?, point-based VI (PBVI)? Online belief-space tree search?

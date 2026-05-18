@@ -6,13 +6,13 @@ This file documents *what we're testing*, *what we expect*, and *how we'll know 
 
 ## Headline experiment
 
-> **H0** — A QMDP policy operating on a 2-state Gaussian HMM regime model does not beat a static 60/40 stock/bond portfolio out-of-sample, after 5 bps transaction costs, over the period 2000–2024.
+> **H0**, A QMDP policy operating on a 2-state Gaussian HMM regime model does not beat a static 60/40 stock/bond portfolio out-of-sample, after 5 bps transaction costs, over the period 2000–2024.
 
 We reject H0 if **annualized Sharpe ratio of QMDP > Sharpe of 60/40** with a > 50% improvement (sensitivity in `06_sensitivity.py`).
 
 ## Detailed experiments
 
-### Experiment 1 — HMM model selection
+### Experiment 1, HMM model selection
 
 | Variable | Levels |
 |---|---|
@@ -26,7 +26,7 @@ We reject H0 if **annualized Sharpe ratio of QMDP > Sharpe of 60/40** with a > 5
 
 **Falsification:** if BIC is monotone-decreasing in $K$ over our range, we keep adding states until BIC tops out (data-driven).
 
-### Experiment 2 — Regime interpretability
+### Experiment 2, Regime interpretability
 
 | Quantity | Expected |
 |---|---|
@@ -37,7 +37,7 @@ We reject H0 if **annualized Sharpe ratio of QMDP > Sharpe of 60/40** with a > 5
 
 **Falsification:** if regime labels are not economically interpretable (e.g., the "bear" regime has high SPY returns), the HMM is overfitting or the observation set is wrong; revisit step 1.
 
-### Experiment 3 — MDP solver agreement
+### Experiment 3, MDP solver agreement
 
 | Method | Stopping criterion | Result |
 |---|---|---|
@@ -48,7 +48,7 @@ We reject H0 if **annualized Sharpe ratio of QMDP > Sharpe of 60/40** with a > 5
 
 **Falsification:** if they differ, we have an off-by-one or sign error somewhere.
 
-### Experiment 4 — QMDP vs. baselines (the headline)
+### Experiment 4, QMDP vs. baselines (the headline)
 
 | Policy | Description |
 |---|---|
@@ -71,19 +71,19 @@ Backtest: 2000–2024 walk-forward with annual HMM refit, 5 bps cost.
 3. **QMDP turnover higher than Static, lower than Myopic.** Myopic has no incentive to smooth.
 4. **QMDP outperformance concentrated in recessions.** Expansion-period returns roughly similar across policies (because in expansion you want to be long anyway).
 
-### Experiment 5 — Sensitivity grid
+### Experiment 5, Sensitivity grid
 
 $K \in \{2, 3\} \times \gamma \in \{1, 2, 5\} \times \text{freq} \in \{\text{M}, \text{Q}\} \times \text{cost} \in \{0, 5, 20\}$ bps = 36 cells.
 
 **Outputs:**
-- `figures/sensitivity_sharpe.pdf` — Sharpe heatmap by $(K, \gamma)$ at headline cost.
-- `figures/sensitivity_cost.pdf` — line plot of Sharpe vs. cost level for each policy.
+- `figures/sensitivity_sharpe.pdf`, Sharpe heatmap by $(K, \gamma)$ at headline cost.
+- `figures/sensitivity_cost.pdf`, line plot of Sharpe vs. cost level for each policy.
 
 **Prediction:** QMDP beats 60/40 across all reasonable cells. Edge shrinks but does not vanish at 20 bps.
 
 **Falsification:** if the QMDP edge requires zero transaction cost, the result is not actionable.
 
-### Experiment 6 — Statistical significance
+### Experiment 6, Statistical significance
 
 The headline Sharpe difference is one number on one realized history. To estimate uncertainty:
 
@@ -92,7 +92,7 @@ The headline Sharpe difference is one number on one realized history. To estimat
 
 **Prediction:** 95% CI on Sharpe difference does not include 0, and the deflated Sharpe remains positive.
 
-### Experiment 7 (Stretch) — Monte Carlo validation
+### Experiment 7 (Stretch), Monte Carlo validation
 
 Simulate from the fitted HMM. Run policies on simulated paths.
 
@@ -100,7 +100,7 @@ Simulate from the fitted HMM. Run policies on simulated paths.
 
 **Output:** histograms of Sharpe over 1000 sim paths, side by side for each policy. The medians and CIs should align with the single-history backtest.
 
-### Experiment 8 (Stretch) — Belief-space discretization
+### Experiment 8 (Stretch), Belief-space discretization
 
 QMDP uses the underlying-MDP $Q$-function. A more sophisticated POMDP solver (PBVI) maintains alpha-vectors over the belief simplex.
 

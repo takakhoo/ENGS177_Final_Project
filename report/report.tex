@@ -96,7 +96,7 @@ a $40/60$ allocation and the QMDP Sharpe exceeds the static benchmark
 at every $\gamma$ we test: $\pi^\ast(\text{bull})=\pi^\ast(\text{bear})$. We
 interpret this as evidence that the regime \emph{signal} exists in the data
 (the HMM cleanly recovers the 2008, 2020 and 2022 stress episodes) but the
-regime \emph{action} is not actionable from the two observables alone --- a
+regime \emph{action} is not actionable from the two observables alone, a
 finding that aligns with the literature's emphasis on richer credit-spread
 observations and on Sharpe-style utility shaping. We discuss implications for
 robust regime overlays and outline three extensions.
@@ -109,7 +109,7 @@ robust regime overlays and outline three extensions.
 %================================================
 
 A long-only investor must choose, at every rebalance, the weights of a
-portfolio of two assets --- here a U.S.\ equity index (SPY) and a U.S.\
+portfolio of two assets: a U.S.\ equity index (SPY) and a U.S.\
 aggregate-bond index (AGG). The textbook 60/40 split is a \emph{static}
 allocation that implicitly assumes that the joint return distribution is
 stable over time. Empirically, markets exhibit two regularities that violate
@@ -176,19 +176,19 @@ is generally intractable (PSPACE-hard in the horizon); the
 \emph{QMDP}~\cite{littman1995} approximation, which projects the belief onto
 the action-value function of the fully-observable MDP, is the canonical
 first-order heuristic. We use QMDP because (i)~it is exact when the belief
-is a Dirac measure, (ii)~it requires only an MDP solver, which is course
-material (Lectures 5--7), and (iii)~it scales to the finite-but-large action
-grids we use.
+is a Dirac measure, (ii)~it reduces to a standard infinite-horizon MDP
+solver, and (iii)~it scales to the finite-but-large action grids we use.
 
-\subsection{Relation to the course}
+\subsection{Mathematical machinery}
 
-This problem exercises virtually every result from ENGS\,177 simultaneously:
-Bayesian belief updates (Lec.~2), the underlying Markov chain over regimes
-(Lec.~3), the decision-graph view of one rebalance period (Lec.~4), the
-finite- and infinite-horizon MDP machinery (Lec.~5--7), and the structural
-results on monotone policies (Lec.~7). It also points forward to multi-armed
-bandits (Lec.~8), since a model-free baseline is one of the natural extensions
-we discuss in \Cref{sec:conclusions}.
+The pipeline assembles several standard ingredients: a Bayesian forward
+filter that propagates belief over the latent regime, a Markov chain
+governing regime persistence, a decision-graph view of each single-period
+rebalance, infinite-horizon Bellman recursion solved by value iteration and
+cross-checked against exact policy iteration, and the structural results on
+monotone optimal policies. A model-free reinforcement-learning baseline
+using multi-armed-bandit exploration is a natural extension that we discuss
+in \Cref{sec:conclusions}.
 
 %================================================
 \section{Methods}\label{sec:methods}
@@ -224,7 +224,7 @@ of the HMM transition matrix, and the value-iteration update factors cleanly.
 
 At every epoch $t$ the agent maintains a belief $\bel_t\in\Delta^{K-1}$ over
 the latent regime. Given the previous belief $\bel_{t-1}$ and a new
-observation $\mathbf{o}_t$, the Bayesian update (Lec.~2) is
+observation $\mathbf{o}_t$, the Bayesian update is
 \begin{align}
 \bel_t(s')
 &=\frac{O(\mathbf{o}_t\mid s')\sum_{s\in\state}T(s'\mid s)\,\bel_{t-1}(s)}
@@ -288,10 +288,10 @@ Q^\ast(s,\mathbf{a})=R(s,\mathbf{a})+\lambda\sum_{s'}T(s'\mid s)V^\ast(s').
 \label{eq:qmdp}
 \end{align}
 QMDP is exact when $\bel$ is concentrated (the fully-observable limit),
-and is a sensible heuristic when uncertainty is moderate. It under-explores
-when the optimal action depends on
-\emph{reducing} uncertainty via deliberate information gathering --- not a
-concern here, because regimes are exogenous.
+and is a sensible heuristic when uncertainty is moderate. It tends to
+under-explore when the optimal action depends on \emph{reducing} uncertainty
+via deliberate information gathering, which is not a concern here because
+regimes are exogenous to the portfolio decision.
 
 \subsection{Comparators}\label{sec:comparators}
 
@@ -329,7 +329,7 @@ We perform a walk-forward backtest with monthly rebalancing, applying a
 Each policy is initialised at the stationary regime distribution and at the
 60/40 weights. To keep the present analysis tractable, in this initial study
 we calibrate the HMM \emph{once} on the full 2003--2014 in-sample window and
-hold the parameters fixed thereafter --- a known mild source of look-ahead
+hold the parameters fixed thereafter. This is a mild source of look-ahead
 that we plan to remove in the follow-up walk-forward-refit experiment.
 Performance is reported on the full 271-month series.
 
@@ -354,10 +354,17 @@ the larger models only for the comparative figure.
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.95\linewidth]{../figures/multistate_regime_timeline.pdf}
-\caption{Filtered probability of each regime, $K\in\{2,3,4\}$. The
-worst-mean-SPY-return regime is highlighted in red and is the de-facto
-bear state. NBER recession bars (gray) sit cleanly inside the bear bands
-for $K=2$. For $K=3$ and $K=4$ the HMM collapses extra states.}
+\caption{Filtered (smoothed) regime probability over 2003--2026 under
+$K\in\{2,3,4\}$-state HMMs. The bear regime, defined as the state with the
+lowest mean SPY return, is shown as a filled red region; other states are
+thin lines. Gray bands are NBER recession dates. The $K=2$ model produces
+the cleanest interpretation: bear-regime probability rises near unity in
+2008--2012 (GFC, slow recovery), 2015--16 (China and oil), and 2020--2023
+(COVID and post-pandemic inflation), with NBER bars sitting inside the
+recovered bear regions. The $K=3$ and $K=4$ models collapse two of their
+states (visible in those panels as essentially-flat lines near zero),
+indicating the 271-month panel and the two observation channels do not
+support richer regime structure.}
 \label{fig:regime-timeline}
 \end{figure}
 
@@ -366,20 +373,23 @@ for $K=2$. For $K=3$ and $K=4$ the HMM collapses extra states.}
 ($-0.14\%$), a near-doubled standard deviation ($6.0\%$ vs.~$2.5\%$), a
 higher average VIX (27.7 vs.~15.2), and \emph{slightly higher} mean AGG
 return ($0.50\%$ vs.~$0.28\%$). The last point is consistent with a
-flight-to-quality mechanism --- bonds become slightly more attractive in
+flight-to-quality mechanism: bonds become slightly more attractive in
 stressed periods, on average.
 
 \begin{table}[t]
 \centering\small
-\caption{In-sample regime-conditional moments (2-state HMM).}\label{tab:regime-stats}
+\caption{In-sample regime-conditional moments (2-state HMM). All
+return columns are in \% per month.}\label{tab:regime-stats}
+\setlength{\tabcolsep}{4pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
-Regime & Months & Mean SPY (\%/mo) & SD SPY (\%/mo) & Mean AGG (\%/mo) & SD AGG (\%/mo) & Mean VIX \\
+Regime & Months & Mean SPY & SD SPY & Mean AGG & SD AGG & Mean VIX \\
 \midrule
 Bull (0) & 87 & $\phantom{-}1.16$ & 2.46 & 0.28 & 0.88 & 15.16 \\
 Bear (1) & 48 & $-0.14$           & 6.03 & 0.50 & 1.42 & 27.72 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \subsection{Solver behaviour}\label{sec:results-solver}
@@ -394,9 +404,10 @@ $\gamma$ and every $K$ we tested, as predicted by
 \caption{Solver iteration counts. VI uses the formula-sheet stopping
 criterion $\lVert V^{(n+1)}-V^{(n)}\rVert_\infty<\varepsilon(1-\lambda)/(2\lambda)$.}
 \label{tab:solver-iters}
+\setlength{\tabcolsep}{6pt}
 \begin{tabular}{rcccc}
 \toprule
-$K$ & VI iterations $(\gamma=2)$ & PI iterations & VI iterations $(\gamma=10)$ & PI iterations \\
+$K$ & VI ($\gamma{=}2$) & PI ($\gamma{=}2$) & VI ($\gamma{=}10$) & PI ($\gamma{=}10$) \\
 \midrule
 2 & 125 & 2 & 125 & 2 \\
 3 & 96  & 2 & 96  & 2 \\
@@ -416,6 +427,8 @@ $\lambda=0.95$, 5~bps cost).
 \caption{Headline backtest 2003--2026. Static 60/40 vs.~QMDP vs.~myopic
 one-step lookahead. All metrics annualised where applicable.}
 \label{tab:headline}
+\setlength{\tabcolsep}{6pt}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{lrrrrrr}
 \toprule
 Policy & CAGR & Vol & Sharpe & Max DD & Calmar & Turnover \\
@@ -424,17 +437,22 @@ Static 60/40 & 7.35\% & 9.4\% & 0.81 & $-34.2\%$ & 0.22 & 0.000 \\
 QMDP ($\gamma=2$) & 9.90\% & 14.7\% & 0.72 & $-53.0\%$ & 0.19 & 0.000 \\
 Myopic 12-mo & 13.99\% & 11.3\% & \textbf{1.22} & $-21.1\%$ & \textbf{0.66} & 0.236 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.85\linewidth]{../figures/multistate_equity_curves.pdf}
-\caption{Cumulative wealth, 2003--2026 (log scale). Equity curves for the
-QMDP and myopic policies under $K\in\{2,3,4\}$ regime configurations and
-the single Static 60/40 benchmark. QMDP and Static curves are essentially
-indistinguishable across $K$ because the underlying MDP collapses to a
-100\%-stocks allocation under CRRA $\gamma=2$.}
+\includegraphics[width=0.92\linewidth]{../figures/multistate_equity_curves.pdf}
+\caption{Cumulative wealth (log scale) from \$1 invested at the start of
+the backtest. Solid, dashed and dotted variants correspond to $K=2,3,4$
+regime configurations of the same QMDP and myopic policies; the static
+60/40 benchmark is the heavier gray line. Terminal-wealth values are
+annotated to the right of each curve. Note that the QMDP equity curves
+overlap almost perfectly across $K$: the underlying MDP collapses to a
+100\%-stocks allocation under CRRA $\gamma=2$ regardless of regime count,
+so the regime overlay reduces to a pure-equity strategy. The myopic policy,
+which uses a 12-month trailing return, dominates because it captures
+trend whenever stocks slip below bonds.}
 \label{fig:equity}
 \end{figure}
 
@@ -452,15 +470,15 @@ allocation toward bonds.
 \subsection{Why QMDP collapses: CRRA risk-aversion sweep}\label{sec:gamma}
 
 \Cref{fig:gamma} reports the headline result of this paper. We sweep CRRA
-risk aversion $\gamma\in\{1,2,3,5,8,10,15,20\}$ and re-solve the MDP for each.
-At $\gamma\le 3$ the optimal policy is "100\% stocks" in every regime;
-$\gamma=5$ shifts to 80\%/20\%; $\gamma=8$ to 40\%/60\%; $\gamma=15$ to
-20\%/80\%; $\gamma=20$ to 20\%/80\%. Crucially, $\pi^\ast(s_{\rm bull})$
-equals $\pi^\ast(s_{\rm bear})$ at \emph{every} $\gamma$. That is, the
-optimal policy does \emph{not} differ across regimes --- it merely shifts
-with the agent's risk-tolerance level. The QMDP Sharpe ratio surpasses the
-static-60/40 benchmark Sharpe (0.81) starting at $\gamma=8$ and saturates
-near 0.89 at $\gamma\ge15$.
+risk aversion $\gamma\in\{1,2,3,5,8,10,15,20\}$ and re-solve the MDP for
+each. At $\gamma\le 3$ the optimal policy is ``100\,\% stocks'' in every
+regime; $\gamma=5$ shifts to $80/20$; $\gamma=8$ to $40/60$; and
+$\gamma\ge 15$ to $20/80$. Crucially, $\pi^\ast(s_{\rm bull})$ equals
+$\pi^\ast(s_{\rm bear})$ at \emph{every} $\gamma$: the optimal policy does
+\emph{not} differ across regimes; it merely shifts with the agent's
+risk-tolerance level. The QMDP Sharpe ratio surpasses the static-$60/40$
+benchmark (0.81) starting at $\gamma=8$ and saturates near $0.89$ at
+$\gamma\ge15$.
 
 \begin{figure}[t]
 \centering
@@ -472,28 +490,37 @@ near 0.89 at $\gamma\ge15$.
 \includegraphics[width=\linewidth]{../figures/gamma_equity_curves.pdf}
 \caption{Equity curves at $\gamma\in\{2,5,10,20\}$.}\label{fig:gamma-eq}
 \end{subfigure}
-\caption{CRRA risk-aversion sweep. (a)~QMDP Sharpe crosses static-60/40
-at $\gamma\approx 8$. (b)~At $\gamma=2$ the QMDP policy is all-stocks; by
-$\gamma=20$ it is 20/80 in both regimes.}\label{fig:gamma}
+\caption{CRRA risk-aversion sweep. Panel (a) plots the annualised Sharpe
+ratio of each policy as $\gamma$ varies from 1 to 20. The static-60/40 and
+myopic baselines are flat by construction. The QMDP Sharpe is below the
+static benchmark for $\gamma\le 5$ and crosses above it at $\gamma=8$,
+reaching $0.89$ by $\gamma\ge 15$. Panel (b) shows the corresponding
+backtest equity curves at four representative $\gamma$ values. Each panel
+title states the underlying MDP's optimal stock/bond split, illustrating
+that higher risk aversion shifts the QMDP policy bondward across the
+board, but never differentiates the bull and bear regimes.}\label{fig:gamma}
 \end{figure}
 
-\Cref{tab:gamma-policy} makes this concrete. Within the columns of the table,
-the policy is constant across rows --- regime-insensitive --- but it shifts
-\emph{column to column} as $\gamma$ rises.
+\Cref{tab:gamma-policy} makes this concrete. Within each column the policy is
+constant across rows (regime-insensitive), but it shifts \emph{column to
+column} as $\gamma$ rises.
 
 \begin{table}[t]
 \centering\small
-\caption{Optimal policy $\pi^\ast(s)$ as a function of regime $s$ and CRRA $\gamma$.
-The same column is repeated across rows, indicating regime-insensitivity.}
+\caption{Optimal stock/bond split $\pi^\ast(s)$ as a function of regime $s$ and CRRA $\gamma$.
+Within columns the two regimes give the \emph{same} action: the regime label does
+not change the policy. The policy shifts \emph{across} columns as $\gamma$ rises.}
 \label{tab:gamma-policy}
-\begin{tabular}{lrrrrrrr}
+\setlength{\tabcolsep}{5pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lccccccc}
 \toprule
 Regime & $\gamma{=}1$ & $\gamma{=}2$ & $\gamma{=}3$ & $\gamma{=}5$ & $\gamma{=}8$ & $\gamma{=}15$ & $\gamma{=}20$ \\
 \midrule
 Bull (0) & 100/0 & 100/0 & 100/0 & 80/20 & 40/60 & 20/80 & 20/80 \\
 Bear (1) & 100/0 & 100/0 & 100/0 & 80/20 & 40/60 & 20/80 & 20/80 \\
 \bottomrule
-\end{tabular}
+\end{tabular}}
 \end{table}
 
 %================================================
@@ -550,13 +577,12 @@ diagnostic.
 
 \subsection*{What this report demonstrates}
 
-End-to-end, this report is also a working example of the course's full
-toolkit: a hidden Markov chain (Lec.~3) viewed through the lens of a Bayesian
-network (Lec.~2), inserted into a fully-observable Bellman recursion solved
-both by value iteration and exact policy iteration (Lec.~7), all wrapped in a
-belief-state controller (QMDP). The report's own conclusions then point
-forward to model-free reinforcement learning (Lec.~8) as an alternative
-worth investigating.
+End-to-end, the project assembles a hidden Markov chain over regimes,
+viewed through the lens of a Bayesian network, into a fully-observable
+Bellman recursion solved by value iteration and cross-checked against exact
+policy iteration, and wrapped in a belief-state controller via the QMDP
+approximation. The natural model-free alternative, a multi-armed-bandit or
+temporal-difference learner, is left to future work.
 
 \bigskip
 \hrule
@@ -646,7 +672,7 @@ Task & Dario & Even & Kyle (KDLL) & Taka \\
 Defined the problem & 25\% & 25\% & 25\% & 25\% \\
 Collected data & 25\% & 25\% & 25\% & 25\% \\
 Performed data analysis & 30\% & 20\% & 30\% & 20\% \\
-Built model of uncertainty (HMM) & 70\% & --- & 20\% & 10\% \\
+Built model of uncertainty (HMM) & 70\% & 0\% & 20\% & 10\% \\
 Built model of decision (POMDP) & 10\% & 30\% & 10\% & 50\% \\
 Developed solution technique (VI/PI/QMDP) & 10\% & 60\% & 20\% & 10\% \\
 Drafted initial report & 20\% & 20\% & 20\% & 40\% \\

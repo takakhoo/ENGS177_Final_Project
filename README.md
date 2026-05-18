@@ -1,98 +1,121 @@
-# Regime-Switching Asset Allocation via a Partially Observable Markov Decision Process
+# Regime-Switching Asset Allocation via a POMDP
 
-**ENGS 177 — Decision-Making Under Uncertainty, Spring 2026**
+**ENGS 177, Decision-Making Under Uncertainty, Spring 2026**
+Dario Blanco Morales · Even Hogberget · Kyle David Ledda-Lewaren · Taka Khoo
+Instructor: Prof. Wesley Marrero, Thayer School of Engineering, Dartmouth College
 
-Project type: **New Application** (POMDP for tactical asset allocation under regime uncertainty)
+> A long-only investor must split capital between U.S. equities (SPY) and aggregate bonds (AGG) on a monthly schedule. We model the prevailing macro-financial regime as a hidden state, infer it from VIX and the 10Y–3M Treasury term spread via a Gaussian Hidden Markov Model, and use a QMDP approximation of the resulting POMDP to choose portfolio weights. The policy is backtested against a static 60/40 benchmark and a myopic trend-following baseline over 2003–2026.
 
-**Team:** Dario Blanco Morales · Even Hogberget · Kyle David Ledda-Lewaren (KDLL) · Taka Khoo
+## Deliverables (click to download)
 
-**Instructor:** Prof. Wesley Marrero · Dartmouth Thayer School of Engineering
+| Item | Pages | Link |
+|---|---|---|
+| **Final report** (full math, methods, results) | 10 | [`report/report.pdf`](report/report.pdf) |
+| **Presentation slides** (10-slide overview) | 11 | [`presentation/slides.pdf`](presentation/slides.pdf) |
+| Original proposal (submitted to Canvas) | 2 | [`proposal/ENGS177_Term_Project_Proposal.docx`](proposal/ENGS177_Term_Project_Proposal.docx) |
 
----
+## Headline result
 
-## 1. What this project is
+Out-of-sample backtest, October 2003 through April 2026 (271 monthly observations), 5 bps transaction cost per side, monthly rebalancing:
 
-We model dynamic stock/bond allocation as a **POMDP** where the latent state is the current macroeconomic regime (e.g., expansion vs. stress). The regime is **not directly observable**; we infer a belief over it from a small set of observable macro-financial proxies (VIX, term spread, high-yield credit spread). We solve the POMDP approximately using the **QMDP** approximation built on top of a fully-observable MDP solution.
+| Policy | CAGR | Vol | Sharpe | Max DD | Calmar | Turnover |
+|---|---:|---:|---:|---:|---:|---:|
+| **Static 60/40** (benchmark) | 7.35% | 9.4% | 0.81 | −34.2% | 0.22 | 0.000 |
+| **QMDP** (CRRA γ=2)           | 9.90% | 14.7% | 0.72 | −53.0% | 0.19 | 0.000 |
+| **Myopic** 12-month trend     | **13.99%** | 11.3% | **1.22** | **−21.1%** | **0.66** | 0.236 |
 
-We backtest the resulting regime-aware policy against a static **60/40** benchmark and a **myopic one-step-lookahead** baseline, and analyze sensitivity to the number of regimes, rebalancing frequency, and transaction-cost level.
+Under log/γ=2 utility, the underlying MDP's optimal policy collapses to 100% stocks in every regime, so QMDP behaves like a leveraged equity strategy. Sweeping CRRA risk aversion (figures below) shows that QMDP's Sharpe surpasses the static benchmark once γ ≥ 8, but the optimal policy is the same in bull and bear regimes at every γ we tested. The two macro observables identify the regime correctly; they do not differentiate it enough to act on.
 
-## 2. Why a POMDP and not just an MDP or a decision tree
+## Main figures
 
-| If we used... | Problem |
-|---|---|
-| Decision tree | Tree explodes with horizon; cannot share state structure across periods. |
-| Influence diagram | Same blowup at long horizon; not a natural fit for sequential rebalancing. |
-| Fully-observable MDP | Requires us to know the current regime — but regimes are **latent**. |
-| **POMDP (this work)** | Natural fit: Markov chain over hidden regimes; Bayesian filter; QMDP for tractable approximate optimal control. |
+### Regime detection: HMM correctly recovers 2008, 2020 and 2022 stress
+![Regime timeline across K=2,3,4 HMMs](figures/multistate_regime_timeline.png)
 
-This synthesizes class material from Lectures 2 (Bayesian inference), 3 (Markov chains), 5–6 (finite-horizon MDPs / Bellman), 7 (infinite-horizon DP / value & policy iteration), and 8 (bandits / exploration). See [`docs/02_class_concepts.md`](docs/02_class_concepts.md).
+The bear regime (filled red region) is the state with the lowest mean SPY return. NBER recessions (gray bands) sit cleanly inside the bear bands at K=2. K=3 and K=4 collapse extra states.
 
-## 3. Repository layout
+### Backtest: equity curves across regime counts
+![Equity curves across K=2,3,4](figures/multistate_equity_curves.png)
+
+Terminal wealth from \$1 invested, log scale. The QMDP and static curves are nearly indistinguishable; the myopic trend follower captures recent first-moment information and dominates.
+
+### Sensitivity: when does QMDP unlock?
+![QMDP Sharpe vs CRRA risk aversion](figures/gamma_sensitivity_sharpe.png)
+
+Sharpe ratio of each policy as CRRA risk aversion γ varies. The vertical red line marks the crossover (γ ≈ 8) where QMDP first beats the static benchmark.
+
+### Sensitivity: full equity curves at four γ values
+![Equity curves under varying gamma](figures/gamma_equity_curves.png)
+
+Equity curves at γ ∈ {2, 5, 10, 20}. Higher γ shifts the QMDP policy bondward; the static and myopic policies do not depend on γ.
+
+## What's in this repo
 
 ```
 ENGS177_Final_Project/
-├── README.md                          ← you are here
-├── docs/                              ← agent-readable briefs (start here if you are an LLM)
+├── README.md                 ← you are here
+├── report/                   ← LaTeX final report
+│   ├── report.tex
+│   └── report.pdf
+├── presentation/             ← beamer slides
+│   ├── slides.tex
+│   └── slides.pdf
+├── proposal/                 ← submitted Canvas proposal
+├── docs/                     ← agent / contributor briefs
+│   ├── 00_agent_quickstart.md
 │   ├── 01_project_overview.md
 │   ├── 02_class_concepts.md
 │   ├── 03_external_research.md
 │   ├── 04_implementation_plan.md
 │   ├── 05_experimental_design.md
 │   └── 06_deliverables.md
-├── proposal/                          ← original 2-page Canvas proposal (.docx)
-├── homework/                          ← per-team-member homework artifacts
-│   ├── taka/                          ←   HW1, HW2, HW3 (tex + pdf), solve_hw3.py
-│   ├── kdll/                          ←   HW2, HW3 PDFs
-│   ├── dario/                         ←   (placeholder — drop files in)
-│   └── even/                          ←   (placeholder — drop files in)
-├── proposal/                          ← team proposal
-├── data/                              ← FRED + Yahoo data, raw and processed
+├── homework/                 ← per-author HW1–3 PDFs and TeX
+│   ├── taka/  kdll/  dario/  even/
+├── data/                     ← FRED + Yahoo raw and aligned monthly panel
+│   ├── README.md
 │   ├── raw/
-│   └── processed/
-├── src/                               ← reusable Python modules
-│   ├── data/      fetch_data.py
-│   ├── models/    hmm.py · mdp.py · qmdp.py
-│   ├── backtest/  backtest.py
-│   └── utils/     plotting.py
-├── experiments/                       ← runnable scripts, one per pipeline stage
-│   ├── 01_fetch_data.py
-│   ├── 02_hmm_calibration.py
-│   ├── 03_regime_interpretation.py
-│   ├── 04_qmdp_solve.py
-│   └── 05_backtest_compare.py
-├── figures/                           ← plots generated by experiments
-├── results/                           ← metric tables (CSV), policy maps
-└── requirements.txt
+│   └── processed/monthly.csv
+├── src/                      ← reusable Python modules
+│   ├── data/fetch_data.py
+│   ├── models/{hmm,mdp,qmdp}.py
+│   └── utils/{utility,metrics,plotting}.py
+├── experiments/              ← runnable pipeline scripts
+│   ├── 00_synthetic_demo.py            (no-network smoke test)
+│   ├── 01_fetch_data.py                (FRED + Yahoo download)
+│   ├── 02_hmm_calibration.py           (Baum–Welch + BIC)
+│   ├── 03_regime_interpretation.py     (timeline plot vs NBER)
+│   ├── 04_qmdp_solve.py                (VI + PI + QMDP)
+│   ├── 05_backtest_compare.py          (headline backtest)
+│   ├── 06_multistate_comparison.py     (K ∈ {2,3,4})
+│   └── 07_gamma_sensitivity.py         (CRRA γ sweep)
+├── figures/                  ← PDF + PNG outputs
+└── results/                  ← CSV tables and INITIAL_FINDINGS.md
 ```
 
-## 4. Quick start
+## How to reproduce
 
 ```bash
-# Setup (one time)
+# One-time setup
 python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 
-# A — Synthetic-data smoke test (no network needed)
+# Synthetic smoke test (no network)
 python experiments/00_synthetic_demo.py
-#   -> figures/synthetic_equity_curve.{pdf,png}
-#   -> results/synthetic_metrics.csv
 
-# B — Real-data pipeline (needs internet for FRED + Yahoo)
-python experiments/01_fetch_data.py             # data/processed/monthly.csv
-python experiments/02_hmm_calibration.py        # data/processed/hmm_{2,3,4}state.pkl
-python experiments/03_regime_interpretation.py  # figures/regime_timeline.pdf
-python experiments/04_qmdp_solve.py             # results/{mdp_policy,Q_star}.{csv,npy}
-python experiments/05_backtest_compare.py       # figures/equity_curve.pdf + results/metrics.csv
+# Real-data pipeline (FRED + Yahoo)
+python experiments/01_fetch_data.py
+python experiments/02_hmm_calibration.py
+python experiments/03_regime_interpretation.py
+python experiments/04_qmdp_solve.py
+python experiments/05_backtest_compare.py
 
-# C — Multi-regime and gamma-sensitivity experiments (read these for the report)
-python experiments/06_multistate_comparison.py  # figures/multistate_*.pdf
-python experiments/07_gamma_sensitivity.py      # figures/gamma_*.pdf
+# Sensitivity studies (used for the report's headline figures)
+python experiments/06_multistate_comparison.py
+python experiments/07_gamma_sensitivity.py
 ```
 
-## 4b. How to load the data and a fitted HMM
+## How to load the data and a fitted HMM
 
-Once you've run `experiments/01_fetch_data.py` and `02_hmm_calibration.py`,
-all downstream code can recover the state of the pipeline with two reads:
+After running steps 01 and 02 above:
 
 ```python
 import pickle
@@ -100,55 +123,34 @@ from pathlib import Path
 import pandas as pd
 
 REPO = Path(".")
-# Monthly aligned panel (date index, observation columns, asset returns)
+# Monthly aligned panel: VIX, term spread, NBER dummy, SPY and AGG log returns.
 df = pd.read_csv(REPO / "data/processed/monthly.csv")
-dc = df.columns[0]                          # FRED uses 'observation_date'
+dc = df.columns[0]                       # FRED uses 'observation_date'
 df[dc] = pd.to_datetime(df[dc]); df = df.set_index(dc)
 
-# Pre-trained Gaussian HMM (any K in {2, 3, 4})
+# Pre-trained 2-state Gaussian HMM
 with open(REPO / "data/processed/hmm_2state.pkl", "rb") as f:
     hmm = pickle.load(f)
 
 print(df.tail())
 print("transition matrix:\n", hmm.transmat_)
-print("means:\n", hmm.means_)
+print("emission means (VIX, term spread):\n", hmm.means_)
 ```
 
-The monthly panel columns are documented in
-[`data/README.md`](data/README.md). Models are `hmmlearn.GaussianHMM`
-instances, fully picklable.
+The monthly panel columns are documented in [`data/README.md`](data/README.md). Models are `hmmlearn.GaussianHMM` instances and are fully picklable.
 
-## 4c. Compiled artefacts
+## Further reading inside the repo
 
-Two PDFs are committed to the repo (you don't need to rebuild them to read):
+- [`docs/01_project_overview.md`](docs/01_project_overview.md), canonical problem statement, POMDP tuple, solver choice
+- [`docs/03_external_research.md`](docs/03_external_research.md), five-tier literature map (Hamilton, Kaelbling, Puterman, etc.)
+- [`docs/04_implementation_plan.md`](docs/04_implementation_plan.md), pipeline diagram and per-step responsibilities
+- [`docs/05_experimental_design.md`](docs/05_experimental_design.md), seven experiments with falsifiable predictions
+- [`results/INITIAL_FINDINGS.md`](results/INITIAL_FINDINGS.md), narrative of the first real-data backtest and why the QMDP collapses at γ=2
 
-- [`report/report.pdf`](report/report.pdf) — 10-page final report.
-- [`presentation/slides.pdf`](presentation/slides.pdf) — 10-slide beamer deck.
+## External references
 
-To rebuild either:
+The report cites the following papers and books in full: Hamilton (1989), Ang & Bekaert (2002), Guidolin & Timmermann (2007), Nystrup, Madsen & Lindström (2018), Kaelbling, Littman & Cassandra (1998), Littman, Cassandra & Kaelbling (1995), Rabiner (1989), Pineau, Gordon & Thrun (2003), Puterman (2005), Kochenderfer (2015), Sutton & Barto (2018), and López de Prado (2018). See [`report/report.pdf`](report/report.pdf) §References for citations.
 
-```bash
-cd report       && tectonic report.tex   # uses Tectonic (Rust TeX engine)
-cd presentation && tectonic slides.tex
-```
+## License
 
-## 5. Deliverables (mapped to grading rubric)
-
-See [`docs/06_deliverables.md`](docs/06_deliverables.md) for the full mapping. Quick summary of what we owe:
-
-| Item | Where | Status |
-|---|---|---|
-| Proposal (1 page) | `proposal/ENGS177_Term_Project_Proposal.docx` | Submitted |
-| Weekly check-in updates | (oral, in class) | Ongoing |
-| 8–10 page report | `report/` (TBD) | Drafting |
-| Presentation slides | `presentation/` (TBD) | TBD |
-| Peer review | (TBD, post-submission) | TBD |
-| Code + reproducible pipeline | `src/` + `experiments/` | In progress |
-
-## 6. For agents / collaborators reading this repo
-
-Read [`docs/01_project_overview.md`](docs/01_project_overview.md) first. It is the canonical brief. The rest of `docs/` expands specific dimensions.
-
-## 7. License
-
-Coursework — not licensed for redistribution beyond the team.
+Coursework. Not licensed for redistribution outside the team and the course.

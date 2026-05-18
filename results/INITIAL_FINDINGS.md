@@ -1,4 +1,4 @@
-# Initial Findings — Real Backtest 2003–2026
+# Initial Findings, Real Backtest 2003–2026
 
 First end-to-end real-data backtest is in. Worth recording the surprise *before* it shapes the rest of the work.
 
@@ -25,7 +25,7 @@ Consequence: QMDP, which is $\argmax_a \sum_s b(s) Q^*(s,a)$, picks "all stocks"
 | QMDP (all-stocks) | 9.90% | 14.7% | 0.72 | −53.0% | 0.19 | 0.00 |
 | Myopic | 13.99% | 11.3% | **1.22** | −21.1% | 0.66 | 0.24 |
 
-**QMDP underperforms static 60/40 in risk-adjusted terms** here — it's just a high-leverage equity portfolio.
+**QMDP underperforms static 60/40 in risk-adjusted terms** here, it's just a high-leverage equity portfolio.
 
 **Myopic** (which uses 12-month rolling mean returns and linear scoring) does much better: it has real signal because it captures *trend*, not just regime label.
 
@@ -47,7 +47,7 @@ Myopic's score function is
 
 $$\text{score}(a) = \sum_s b(s)\, \mathbb{E}[r_{\text{stock}} | s] w_{\text{stock}} + \mathbb{E}[r_{\text{bond}} | s] w_{\text{bond}}$$
 
-with empirical means estimated on the trailing 12 months. So it captures *momentum* — a recent crash drops $\mathbb{E}[r_{\text{stock}}]$ below $\mathbb{E}[r_{\text{bond}}]$ and shifts the policy to bonds. The QMDP, by contrast, uses *long-run regime-conditional* means which are positive enough for stocks even in the bear state.
+with empirical means estimated on the trailing 12 months. So it captures *momentum*, a recent crash drops $\mathbb{E}[r_{\text{stock}}]$ below $\mathbb{E}[r_{\text{bond}}]$ and shifts the policy to bonds. The QMDP, by contrast, uses *long-run regime-conditional* means which are positive enough for stocks even in the bear state.
 
 This is a great natural result to discuss in the report. The QMDP underperformance is itself a meaningful finding: **regime-aware allocation only adds value when the regime signal differentiates expected returns strongly enough relative to the discount factor, and log/γ=2 utility is too risk-tolerant to act on the signal we have**.
 

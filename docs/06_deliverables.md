@@ -29,7 +29,7 @@ Term project total: **50% of course grade.**
 
 ---
 
-## Deliverable 1 — Final Report (20%)
+## Deliverable 1, Final Report (20%)
 
 **Length:** 8–10 pages excluding references. 11pt, letter, single column, single space, 1-inch margins.
 
@@ -61,7 +61,7 @@ Deductions to avoid:
 | Figures with display errors | −0.25 | PDF export, no rasterization at low DPI |
 | Typos in proofs | −0.25 | Proofread by all 4 team members |
 | Incorrect results | −1 | Sanity checks, multiple solvers cross-checked |
-| No results | −2 | Cannot happen — we have backtest output |
+| No results | −2 | Cannot happen, we have backtest output |
 | Missing implications discussion | −0.5 | Explicit "Implications" paragraph in §4 |
 | Missing extensions discussion | −0.5 | Explicit "Future work" paragraph in §4 |
 
@@ -102,7 +102,7 @@ References
 Appendix: Contributions table
 ```
 
-## Deliverable 2 — Presentation (15%)
+## Deliverable 2, Presentation (15%)
 
 8–10 minutes + 1–2 minutes Q&A. Each team member required to present.
 
@@ -129,7 +129,7 @@ Appendix: Contributions table
 | 7–8 | Kyle / KDLL (backtest + results) | 2.5 min |
 | 9–10 | All (sensitivity, conclude) | 1.5 min |
 
-## Deliverable 3 — Peer Review (5%)
+## Deliverable 3, Peer Review (5%)
 
 One page, sections:
 - Summary and contributions
@@ -140,14 +140,14 @@ We get assigned another team after submission. Read their report carefully; do n
 
 ---
 
-## Contributions Table (template — fill in at submission time)
+## Contributions Table (template, fill in at submission time)
 
 | Task | Dario | Even | Kyle (KDLL) | Taka |
 |---|---|---|---|---|
 | Defined the problem | 25% | 25% | 25% | 25% |
-| Collected data | — | — | 50% | 50% |
+| Collected data | 0% | 0% | 50% | 50% |
 | Data analysis | 30% | 20% | 30% | 20% |
-| Built uncertainty model (HMM) | **70%** | — | 20% | 10% |
+| Built uncertainty model (HMM) | **70%** | 0% | 20% | 10% |
 | Built decision model (POMDP) | 10% | 30% | 10% | **50%** |
 | Developed solution technique (QMDP / VI) | 10% | **60%** | 20% | 10% |
 | Drafted initial report | 20% | 20% | 20% | **40%** |

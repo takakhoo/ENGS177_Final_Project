@@ -12,7 +12,7 @@ We're building a regime-switching asset allocator framed as a POMDP and solved w
 
 1. **Do not** rewrite or replace anyone else's homework PDFs in `homework/`. Those are immutable references.
 2. **Do not** push to `main` without running the synthetic demo first. It is the smoke test.
-3. **Do not** commit the contents of `data/raw/` or `data/processed/*.pkl` — they're in `.gitignore`.
+3. **Do not** commit the contents of `data/raw/` or `data/processed/*.pkl`, they're in `.gitignore`.
 4. **Do not** assume the partner team has done their work yet. The `homework/dario/` and `homework/even/` folders are placeholders; if you need to reference their material, ask them in Slack first.
 5. **Do not** modify the proposal docx (`proposal/ENGS177_Term_Project_Proposal.docx`). It is the version that was submitted to Canvas.
 
@@ -22,7 +22,7 @@ We're building a regime-switching asset allocator framed as a POMDP and solved w
 2. Read `docs/02_class_concepts.md` to see exactly which ENGS 177 lecture formulas live in which file.
 3. If you're adding a new experiment, put it in `experiments/NN_*.py` with a numeric prefix in pipeline order, and add a row in `docs/05_experimental_design.md`.
 4. If you're adding new code, put reusable modules in `src/<area>/` and import them from experiments. Tests live next to the module as `test_*.py`.
-5. Use `numpy`, `pandas`, `matplotlib` only — no deep-learning frameworks. Add deps to `requirements.txt`.
+5. Use `numpy`, `pandas`, `matplotlib` only, no deep-learning frameworks. Add deps to `requirements.txt`.
 
 ## Common tasks
 
@@ -36,7 +36,7 @@ Extend the grid in `experiments/06_sensitivity.py` (not yet written; create it).
 Use `matplotlib`, export to `figures/*.pdf`. Use sane defaults (`figsize=(11, 4)` for time series, `figsize=(6, 6)` for square plots). Caption the figure in the report and reference it in prose to avoid the −0.25 rubric deduction.
 
 ### "Add a new dataset"
-Update `src/data/fetch_data.py`. Verify the new column lands in `data/processed/monthly.csv` with no NaNs. Document the source in `docs/03_external_research.md` under "Tier 5 — Data references."
+Update `src/data/fetch_data.py`. Verify the new column lands in `data/processed/monthly.csv` with no NaNs. Document the source in `docs/03_external_research.md` under "Tier 5, Data references."
 
 ## Slack / Canvas signals to watch
 
@@ -46,10 +46,10 @@ Update `src/data/fetch_data.py`. Verify the new column lands in `data/processed/
 
 ## Where the team docs live
 
-- **Code lives here** — this repo.
-- **Slides** — we'll add a `presentation/` directory once we start drafting.
-- **Report draft** — overleaf project link in the team Slack.
-- **Meeting notes** — team Slack pinned messages.
+- **Code lives here**, this repo.
+- **Slides**, we'll add a `presentation/` directory once we start drafting.
+- **Report draft**, overleaf project link in the team Slack.
+- **Meeting notes**, team Slack pinned messages.
 
 ## Synthetic demo cheat sheet
 

@@ -21,6 +21,9 @@ sys.path.insert(0, str(REPO))
 
 import matplotlib.pyplot as plt  # noqa: E402
 
+from src.utils.plotting import apply_style, PALETTE, annotate_event  # noqa: E402
+apply_style()
+
 from src.models.mdp import value_iteration, policy_iteration, q_function  # noqa: E402
 from src.models.qmdp import update_belief, stationary_distribution         # noqa: E402
 from src.utils.metrics import summarize                                    # noqa: E402
@@ -149,32 +152,85 @@ def main():
     # Figure: Sharpe vs gamma
     fig, ax = plt.subplots(figsize=(8.5, 4.8))
     df_m = pd.DataFrame(metric_rows)
-    for name, c in zip(("static", "qmdp", "myopic"), ("0.4", "C0", "C2")):
+
+    label_map = {
+        "static": "Static 60/40 (benchmark)",
+        "qmdp":   "QMDP (regime-aware)",
+        "myopic": "Myopic 12-mo trend",
+    }
+    for name in ("static", "qmdp", "myopic"):
         sub = df_m[df_m["name"] == name].sort_values("gamma")
-        ax.plot(sub["gamma"], sub["sharpe"], marker="o", color=c, label=name, lw=1.8)
-    ax.set_xlabel(r"CRRA risk aversion $\gamma$")
-    ax.set_ylabel("Annualized Sharpe ratio")
-    ax.set_title("QMDP policy unlocks at higher risk aversion")
-    ax.axhline(0, color="0", lw=0.4); ax.grid(alpha=0.25); ax.legend()
+        ax.plot(sub["gamma"], sub["sharpe"], marker="o", markersize=6,
+                color=PALETTE[name], label=label_map[name], lw=2.0)
+
+    # Reference lines
+    static_sharpe = df_m[df_m["name"] == "static"]["sharpe"].iloc[0]
+    ax.axhline(static_sharpe, color=PALETTE["static"], lw=0.7, ls=":", alpha=0.6)
+
+    # Find crossover: smallest gamma where QMDP Sharpe >= static Sharpe
+    qmdp_df = df_m[df_m["name"] == "qmdp"].sort_values("gamma")
+    cross = qmdp_df[qmdp_df["sharpe"] >= static_sharpe]["gamma"]
+    if len(cross):
+        gx = float(cross.iloc[0])
+        sx = float(qmdp_df[qmdp_df["gamma"] == gx]["sharpe"].iloc[0])
+        ax.axvline(gx, color=PALETTE["highlight"], lw=0.8, ls="--", alpha=0.7)
+        ax.annotate(
+            f"QMDP unlocks at $\\gamma={gx:.0f}$\n(Sharpe {sx:.2f} > {static_sharpe:.2f})",
+            xy=(gx, sx), xytext=(40, 30),
+            textcoords="offset points", fontsize=10, color=PALETTE["highlight"],
+            arrowprops=dict(arrowstyle="->", color=PALETTE["highlight"], lw=0.8),
+            bbox=dict(boxstyle="round,pad=0.3", fc="white", ec=PALETTE["highlight"], lw=0.6),
+        )
+
+    ax.set_xlabel(r"CRRA risk aversion $\gamma$  (higher = more conservative)")
+    ax.set_ylabel("Annualised Sharpe ratio (2003–2026)")
+    ax.set_title(
+        "QMDP Sharpe vs CRRA risk aversion\n"
+        "Crossover at $\\gamma\\approx 8$ — but $\\pi^\\ast(\\mathrm{bull})=\\pi^\\ast(\\mathrm{bear})$ at every $\\gamma$"
+    )
+    ax.legend(loc="lower right", fontsize=10)
+    ax.set_ylim(0.3, 1.4)
     fig.tight_layout()
     fig.savefig(FIG / "gamma_sensitivity_sharpe.pdf")
-    fig.savefig(FIG / "gamma_sensitivity_sharpe.png", dpi=150)
+    fig.savefig(FIG / "gamma_sensitivity_sharpe.png")
     plt.close(fig)
 
     # Figure: equity curves at gamma = 2, 5, 10, 20
-    fig, axes = plt.subplots(2, 2, figsize=(11.5, 7.5), sharex=True, sharey=True)
+    label_map = {
+        "static": "Static 60/40",
+        "qmdp":   "QMDP",
+        "myopic": "Myopic 12-mo",
+    }
+    fig, axes = plt.subplots(2, 2, figsize=(10.5, 7), sharex=True, sharey=True)
     for ax, gamma in zip(axes.flat, (2.0, 5.0, 10.0, 20.0)):
-        for name, c in zip(("static", "qmdp", "myopic"), ("0.4", "C0", "C2")):
+        for name in ("static", "qmdp", "myopic"):
             cum = eq_curves[gamma][name]
-            ax.plot(cum.index, cum.values, color=c, lw=1.4, label=name)
+            ax.plot(cum.index, cum.values, color=PALETTE[name], lw=1.7,
+                    label=label_map[name])
+            # Terminal value annotation on the right
+            ax.annotate(
+                f"${cum.iloc[-1]:.1f}$", xy=(cum.index[-1], cum.iloc[-1]),
+                xytext=(6, 0), textcoords="offset points", va="center",
+                fontsize=8.5, color=PALETTE[name], weight="bold",
+            )
+        # Identify the policy for QMDP at this gamma to label panel
+        policy_row = pd.DataFrame(policy_rows)
+        policy_row = policy_row[policy_row["gamma"] == gamma].iloc[0]
+        sw = int(round(policy_row["stock_weight"] * 100))
+        bw = int(round(policy_row["bond_weight"] * 100))
+        ax.set_title(f"$\\gamma={gamma:.0f}$  →  QMDP policy: {sw}/{bw} stocks/bonds")
         ax.set_yscale("log")
-        ax.set_title(f"$\\gamma = {gamma}$")
-        ax.legend(loc="upper left", fontsize=8)
-        ax.grid(alpha=0.2)
-    fig.suptitle("Backtest equity curves under varying CRRA risk aversion", y=1.02)
+        ax.legend(loc="upper left", fontsize=9)
+    for ax in axes[1, :]:
+        ax.set_xlabel("Date")
+    for ax in axes[:, 0]:
+        ax.set_ylabel("Cumulative wealth (log scale)")
+    fig.suptitle("Equity curves under varying CRRA risk aversion $\\gamma$ "
+                 "— higher $\\gamma$ shifts QMDP toward bonds across-the-board",
+                 fontsize=13, y=1.00)
     fig.tight_layout()
     fig.savefig(FIG / "gamma_equity_curves.pdf")
-    fig.savefig(FIG / "gamma_equity_curves.png", dpi=150)
+    fig.savefig(FIG / "gamma_equity_curves.png")
     plt.close(fig)
 
     print(f"Wrote {FIG / 'gamma_sensitivity_sharpe.pdf'}")
