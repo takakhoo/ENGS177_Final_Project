@@ -5,10 +5,8 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 *.log
-# raw data is reproducible — don't commit the bulk CSVs
-data/raw/*.csv
-# pickled HMMs are reproducible
-data/processed/*.pkl
-data/processed/monthly.csv
-# generated Q-table (large)
-results/Q_star.npy
+# Note: data/raw/*.csv, data/processed/*.pkl, data/processed/monthly.csv,
+# and results/Q_star.npy are intentionally COMMITTED so teammates can run
+# the full pipeline end-to-end without first hitting FRED/Yahoo. They are
+# still reproducible via experiments/01_fetch_data.py if you ever need to
+# refresh them.

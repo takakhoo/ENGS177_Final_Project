@@ -1,6 +1,10 @@
 # Data Directory
 
-This directory holds raw input data and processed/aligned frames. Most files here are gitignored — see `.gitignore` — to keep the repo small. They are reproducible by running `experiments/01_fetch_data.py`.
+This directory holds raw input data and processed/aligned frames. **All files
+here are committed to the repository** so teammates can run the full pipeline
+end-to-end without first hitting FRED or Yahoo. They are still fully
+reproducible by running `experiments/01_fetch_data.py` if you want to refresh
+to the latest available data.
 
 ## Structure
 
