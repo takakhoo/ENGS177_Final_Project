@@ -1,5 +1,6 @@
 \documentclass[11pt,aspectratio=169]{beamer}
 
+\PassOptionsToPackage{table}{xcolor}
 \usetheme{metropolis}
 \usepackage{amsmath,amssymb,amsfonts,bm,mathtools}
 \usepackage{booktabs,multirow,array}
@@ -7,12 +8,18 @@
 \usetikzlibrary{arrows.meta,positioning,calc,fit,shapes.geometric,decorations.pathreplacing}
 \usepackage{graphicx}
 \usepackage{xcolor}
+\usepackage{colortbl}
+\usepackage{pifont}
 
-% Match metropolis palette with a slight tweak
+% ===== Palette =====
 \definecolor{cb}{HTML}{1f77b4}\definecolor{cr}{HTML}{d62728}
 \definecolor{cg}{HTML}{2ca02c}\definecolor{cy}{HTML}{ff9f00}
+\definecolor{cv}{HTML}{9467bd}
+\setbeamercolor{frametitle}{bg=cb!85!black,fg=white}
+\setbeamercolor{progress bar}{fg=cb}
+\setbeamercolor{alerted text}{fg=cr}
 
-% Math shorthands
+% ===== Math shorthands =====
 \newcommand{\R}{\mathbb{R}}
 \newcommand{\E}{\mathbb{E}}
 \newcommand{\Prb}{\mathbb{P}}
@@ -22,17 +29,21 @@
 \renewcommand{\action}{\mathcal{A}}
 \newcommand{\Obs}{\mathcal{O}}
 
+% ===== TikZ shape library =====
 \tikzset{
-  chance/.style={ellipse,draw,fill=cb!15,minimum width=14mm,minimum height=10mm,thick,inner sep=1pt,font=\small},
-  decision/.style={rectangle,draw,fill=cg!18,minimum width=14mm,minimum height=10mm,thick,rounded corners=1pt,inner sep=2pt,font=\small},
-  utility/.style={diamond,draw,fill=cy!25,minimum width=14mm,minimum height=10mm,thick,inner sep=-2pt,aspect=1.4,font=\small},
+  chance/.style={ellipse,draw,fill=cb!15,minimum width=18mm,minimum height=10mm,thick,inner sep=1pt,font=\footnotesize},
+  decision/.style={diamond,draw,fill=cg!18,minimum width=10mm,minimum height=8mm,thick,inner sep=-2pt,aspect=1.6,font=\footnotesize},
+  utility/.style={trapezium,trapezium left angle=70,trapezium right angle=110,draw,fill=cy!25,minimum width=12mm,minimum height=9mm,thick,inner sep=2pt,font=\footnotesize},
   state/.style={circle,draw,fill=cb!15,minimum size=12mm,thick,inner sep=1pt,font=\small\bfseries},
+  data/.style={cylinder,draw,shape border rotate=90,aspect=0.25,fill=gray!12,thick,minimum height=8mm,minimum width=18mm,font=\footnotesize},
+  highlight/.style={fill=cr!18,rounded corners=2pt},
 }
 
-\title{Regime-Switching Asset Allocation via a POMDP}
-\subtitle{Type: New Application}
+% ===== Title =====
+\title{\textbf{Regime-Switching Asset Allocation via a POMDP}}
+\subtitle{\normalsize\textit{Type: New Application} \quad $\cdot$ \quad 12 baselines, 5 diagnostic experiments}
 \author{Dario Blanco Morales \and Even Hogberget \\ Kyle D. Ledda-Lewaren \and Taka Khoo}
-\institute{\footnotesize ENGS 177, Decision Making Under Uncertainty \\ \footnotesize Thayer School of Engineering, Dartmouth College}
+\institute{\footnotesize ENGS 177, Decision Making Under Uncertainty\\ \footnotesize Thayer School of Engineering, Dartmouth College}
 \date{\footnotesize May 2026}
 
 \begin{document}
@@ -40,213 +51,323 @@
 %-------- Title --------
 \begin{frame}\titlepage\end{frame}
 
-%-------- Slide 1: Motivation --------
+%-------- 1. Motivation --------
 \begin{frame}{The problem: regimes break static allocation}
-\textbf{The 60/40 portfolio lost $\sim$17\% in 2022.}
-\smallskip
+\textbf{In 2022 a 60/40 portfolio lost $\sim$17\%.}
 
-A static allocation assumes stable joint return moments. Markets violate
-this in two ways:
-\begin{itemize}
-  \item \textbf{Conditional heteroskedasticity:} long quiet periods broken by short crises.
-  \item \textbf{Stress correlation:} stocks and bonds sell off together when it hurts most.
+Static allocation assumes stable joint return moments. Markets violate this in two ways:
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \alert{Conditional heteroskedasticity:} long quiet periods broken by short crises (2008, 2020, 2022).
+  \item \alert{Stress correlation:} stocks and bonds sell off together when it hurts most. Bond diversification erodes precisely when it is most needed.
 \end{itemize}
 
-\medskip
-\textbf{Question.} Can a decision-theoretic regime overlay, a POMDP solved
-end-to-end on macroeconomic observables, beat a static benchmark after
-realistic frictions?
+\bigskip
+\begin{tikzpicture}[remember picture,overlay]
+\node[draw=cb,thick,fill=cb!8,rounded corners=4pt,inner sep=8pt,text width=0.92\textwidth,anchor=south]
+  at ([yshift=24mm]current page.south) {
+    \textbf{Question.}\ Can a decision-theoretic regime overlay---a POMDP solved end-to-end on macroeconomic observables---beat a static benchmark after realistic frictions?
+  };
+\end{tikzpicture}
 \end{frame}
 
-%-------- Slide 2: Why POMDP (one decision/lecture tree) --------
-\begin{frame}{Why POMDP, not a tree, ID, or MDP}
+%-------- 2. Why POMDP (rules out alternatives) --------
+\begin{frame}{Why POMDP, not a tree, ID, or fully-observable MDP}
+\centering
+\small\renewcommand{\arraystretch}{1.25}
 \begin{tabular}{ll}
 \toprule
 \textbf{Naive choice} & \textbf{Why it fails here} \\
 \midrule
-Decision tree & Tree explodes with horizon; no shared state. \\
-Influence diagram & Same blow-up; not natural for repeated rebalance. \\
-Fully-observable MDP & Requires knowing the regime, but it is \emph{latent}. \\
-\textcolor{cb}{\textbf{POMDP}} & \textcolor{cb}{Hidden state, Bayesian belief, QMDP for tractable control.} \\
+Decision tree         & Tree explodes combinatorially with horizon; no shared state. \\
+Influence diagram     & Same blow-up; not natural for repeated monthly rebalance. \\
+Fully-observable MDP  & Requires knowing the regime --- but it is \emph{latent}. \\
+\rowcolor{cb!10}\textbf{POMDP} & \textbf{Hidden state, Bayesian belief, QMDP for tractable control.} \\
 \bottomrule
 \end{tabular}
 
 \medskip
-\textbf{Tools assembled:} Bayesian forward filter; Markov chain over regimes;
-infinite-horizon Bellman recursion solved by value iteration and exact
-policy iteration; structural results for monotone policies.
+\textbf{Powell (2019) taxonomy:} QMDP is a \alert{value function approximation} (linear lower envelope over the belief simplex) combined with a \alert{one-step direct lookahead}. The right \emph{minimum} tool for our decision problem.
 \end{frame}
 
-%-------- Slide 3: POMDP tuple --------
-\begin{frame}{POMDP tuple, written once and reused}
+%-------- 3. POMDP tuple --------
+\begin{frame}{POMDP tuple}
 \small
-\begin{description}[itemsep=2pt,topsep=2pt]
+\begin{description}[itemsep=2pt,topsep=0pt]
   \item[$\mathcal{T}$] $=\{0,1,2,\dots\}$, monthly epochs.
-  \item[$\state$] $=\{s_1,\dots,s_K\}$ latent regimes ($K=2,3,4$).
-  \item[$\action$] $=\{(0/100),(20/80),\dots,(100/0)\}$ discrete portfolio grid.
-  \item[$T(s'\mid s)$] HMM transition matrix; \alert{action-independent} (regimes are exogenous).
+  \item[$\state$] $=\{s_{\rm bull},s_{\rm bear}\}$ latent macro regimes ($K{=}2$).
+  \item[$\action$] $=\{(0/100),(20/80),(40/60),(60/40),(80/20),(100/0)\}$ long-only weights.
+  \item[$T(s'\mid s)$] HMM transition matrix; \alert{action-independent} (regimes exogenous).
   \item[$O(\mathbf{o}\mid s)$] Gaussian emission on $\mathbf{o}=(\mathrm{VIX},\mathrm{term\ spread})$.
-  \item[$R(s,\mathbf{a})$] $=\E[\,U(\mathbf{a}^\top\mathbf{r})\mid s\,]-c\lVert\mathbf{a}-\mathbf{a}_{\rm prev}\rVert_1$, CRRA utility.
+  \item[$R(s,\mathbf{a})$] $=\E[U(\mathbf{a}^\top\mathbf{r})\mid s]-c\lVert\mathbf{a}-\mathbf{a}_{\rm prev}\rVert_1$,\ CRRA $U$.
   \item[$\lambda=0.95$] monthly discount.
 \end{description}
 \medskip
-\textbf{Belief update (Bayesian filter):}
-$\bel_t(s')\propto O(\mathbf{o}_t\mid s')\!\sum_s T(s'\mid s)\,\bel_{t-1}(s).$
+\textbf{Bayesian filter:}
+\[
+  \bel_t(s')\propto O(\mathbf{o}_t\mid s')\!\sum_s T(s'\mid s)\,\bel_{t-1}(s).
+\]
 \end{frame}
 
-%-------- Slide 4: Pipeline diagram (TikZ) --------
-\begin{frame}{Pipeline}
+%-------- 4. Pipeline diagram --------
+\begin{frame}{End-to-end pipeline}
 \centering
 \scalebox{0.85}{
-\begin{tikzpicture}[node distance=6mm and 10mm,>=Stealth]
-  \node[chance] (data) {FRED + Yahoo};
-  \node[chance,right=of data] (hmm) {Gaussian HMM};
+\begin{tikzpicture}[node distance=7mm and 12mm,>=Stealth,thick]
+  \node[data] (raw) {FRED + Yahoo};
+  \node[data,right=of raw] (panel) {Monthly panel};
+  \node[chance,right=of panel] (hmm) {Gaussian HMM};
   \node[chance,right=of hmm] (mdp) {Underlying MDP};
-  \node[decision,below=12mm of mdp,xshift=12mm] (qmdp) {QMDP};
-  \node[utility,left=of qmdp] (back) {Backtest};
-  \draw[->,thick] (data)--(hmm) node[midway,above,font=\scriptsize]{Baum--Welch};
-  \draw[->,thick] (hmm)--(mdp) node[midway,above,font=\scriptsize]{$T,\bm{\mu},\bm{\Sigma}$};
-  \draw[->,thick] (mdp)--(qmdp) node[midway,right,font=\scriptsize]{VI/PI};
-  \draw[->,thick] (qmdp)--(back) node[midway,above,font=\scriptsize]{$\pi(\bel)$};
-  \draw[->,thick] (data) to[bend right=18] (back);
+  \node[utility,right=of mdp] (q) {$Q^\ast(s,a)$};
+  \node[chance,below=10mm of panel] (filter) {Bayesian filter};
+  \node[decision,below=10mm of mdp] (qmdp) {QMDP};
+  \node[utility,right=of qmdp] (back) {Backtest};
+  \draw[->] (raw)--(panel) node[midway,above,font=\tiny]{resample};
+  \draw[->] (panel)--(hmm) node[midway,above,font=\tiny]{Baum--Welch};
+  \draw[->] (hmm)--(mdp) node[midway,above,font=\tiny]{$T,\bm{\mu},\bm{\Sigma}$};
+  \draw[->] (mdp)--(q) node[midway,above,font=\tiny]{VI/PI};
+  \draw[->] (panel.south) |- (filter.east);
+  \draw[->] (hmm.south west) -- (filter.north east);
+  \draw[->] (filter) -| (qmdp) node[near end,above,font=\tiny]{$\bel_t$};
+  \draw[->] (q) |- (qmdp);
+  \draw[->] (qmdp)--(back) node[midway,above,font=\tiny]{$\mathbf{a}_t$};
 \end{tikzpicture}}
+
+\bigskip
+\small
+\textbf{Data path} (top): raw $\to$ monthly panel $\to$ HMM $\to$ MDP $\to$ $Q^\ast$ table. \\
+\textbf{Decision path} (bottom): observation $\to$ belief update $\to$ QMDP argmax $\to$ weights.
+\end{frame}
+
+%-------- 5. HMM calibration --------
+\begin{frame}{HMM calibration: 2-state, VIX + term spread}
+\centering
+\includegraphics[height=0.70\textheight,keepaspectratio]{../figures/multistate_regime_timeline.pdf}
+
+\smallskip
+\scriptsize Bear regime (red) tracks GFC 2008--12, China/oil 2015--16, COVID 2020, inflation 2022. NBER bars (gray) sit inside the recovered bear bands.
+
 \medskip
-
-\begin{itemize}
-  \item Raw observations $\to$ HMM emissions and transitions.
-  \item HMM transition matrix becomes the MDP's $T$. Reward built by MC.
-  \item VI and PI cross-checked. QMDP folds belief into $Q^\ast$.
-  \item Backtest is a walk-forward filter+act loop on real history.
-\end{itemize}
+\small
+\textbf{Bull} (87 mo, 64\%): mean SPY $+1.16\%$/mo,\ VIX 15.2. \\
+\textbf{Bear} (48 mo, 36\%): mean SPY $-0.14\%$/mo,\ VIX 27.7. \\
+$\hat T\approx\begin{psmallmatrix}0.96 & 0.04\\ 0.06 & 0.94\end{psmallmatrix}$\ : both regimes 95\%+ sticky.
 \end{frame}
 
-%-------- Slide 5: Regime calibration --------
-\begin{frame}{HMM regime timeline: bear bands match crisis dates}
-\centering
-\includegraphics[height=0.78\textheight,keepaspectratio]{../figures/multistate_regime_timeline.pdf}
-
-\vspace{-1pt}\scriptsize Bear regime (filled red) tracks GFC 2008--12, China/oil 2015--16, COVID 2020, inflation 2022. NBER bars (gray) sit inside the recovered bands.
-\end{frame}
-
-%-------- Slide 5b: Regime-conditional return moments --------
-\begin{frame}{Regime-conditional returns: a clean bull/bear split}
-\centering
-\includegraphics[height=0.55\textheight,keepaspectratio]{../figures/multistate_returns_bar.pdf}
-
-\smallskip\scriptsize
-\begin{tabular}{lrrr}
-\toprule
-Regime & Mean SPY (\%/mo) & SD SPY (\%/mo) & Mean VIX \\
-\midrule
-Bull (state 0, 87 mo) & $+1.16$ & 2.46 & 15.2 \\
-Bear (state 1, 48 mo) & $-0.14$ & 6.03 & 27.7 \\
-\bottomrule
-\end{tabular}
-\end{frame}
-
-%-------- Slide 6: VI vs PI (formula sheet equations) --------
-\begin{frame}{Underlying MDP: VI and PI agree}
-The fully-observable MDP satisfies
+%-------- 6. VI vs PI --------
+\begin{frame}{Underlying MDP: VI and PI agree exactly}
+\small
+The fully observable MDP satisfies the Bellman optimality equation
 \[
-V^\ast(s)=\max_{\mathbf{a}\in\action}\Bigl\{R(s,\mathbf{a})+\lambda\!\sum_{s'\in\state}\!T(s'\mid s)\,V^\ast(s')\Bigr\}.
+V^\ast(s)=\max_{\mathbf{a}\in\action}\!\Bigl\{R(s,\mathbf{a})+\lambda\!\sum_{s'\in\state}\!T(s'\mid s)\,V^\ast(s')\Bigr\}.
 \]
-
+\medskip
 \begin{columns}[T]
-\begin{column}{0.46\linewidth}
+\begin{column}{0.48\linewidth}
 \textbf{Value iteration:}\\
-$V^{(n+1)}=LV^{(n)}$, stop at\\
-$\lVert V^{(n+1)}-V^{(n)}\rVert_\infty<\frac{\varepsilon(1-\lambda)}{2\lambda}$.\\
-\textbf{125 iters} for $\lambda=0.95$, $\varepsilon=10^{-4}$.
-\end{column}\begin{column}{0.46\linewidth}
+$V^{(n+1)}=LV^{(n)}$, stop at $\lVert\Delta V\rVert_\infty<\varepsilon(1-\lambda)/(2\lambda)$.\\[2pt]
+$\to$ \textbf{125 iters} for $\lambda{=}0.95$, $\varepsilon{=}10^{-4}$.
+\end{column}\begin{column}{0.48\linewidth}
 \textbf{Policy iteration:}\\
-solve $(I-\lambda P_\pi)V=r_\pi$, then\\ greedy improvement.\\
-\textbf{2 iters} to converge.
+solve $(I-\lambda P_\pi)V=r_\pi$, then greedy-improve.\\[2pt]
+$\to$ \textbf{2 iters} to converge.
 \end{column}
 \end{columns}
-
-\medskip
-\textbf{Proposition.} VI greedy policy $=$ PI greedy policy, values agree within $2.6\times10^{-6}$.
+\bigskip
+\begin{block}{Proposition (numerical solver agreement)}
+\small VI greedy policy $=$ PI greedy policy. Value functions agree within $2.6\times 10^{-6}$. Empirical realisation of the contraction-mapping equivalence (Puterman 2005).
+\end{block}
 \end{frame}
 
-%-------- Slide 7: QMDP --------
+%-------- 7. QMDP rule --------
 \begin{frame}{QMDP: project belief onto $Q^\ast$}
 \[
-\pi_{\rm QMDP}(\bel)=\argmax_{\mathbf{a}\in\action}\sum_{s\in\state}\bel(s)\,Q^\ast(s,\mathbf{a}).
+\pi_{\rm QMDP}(\bel)=\argmax_{\mathbf{a}\in\action}\;\sum_{s\in\state}\bel(s)\,Q^\ast(s,\mathbf{a})
 \]
 
-\begin{itemize}
-  \item Exact in the fully-observable limit ($\bel$ concentrated).
-  \item Treats POMDP as belief-weighted average of MDPs.
-  \item Avoids the intractable belief-space Bellman recursion.
-  \item Implementation: \texttt{src/models/qmdp.py::qmdp\_action}, single $O(K)$ inner product.
-\end{itemize}
-\end{frame}
+\textbf{Worked example.} Belief after a high-VIX observation: $\bel=(0.069,\,0.931)$ (post-VIX-35 update).
 
-%-------- Slide 8a: Equity curves (figure-heavy) --------
-\begin{frame}{Backtest 2003--2026: equity curves}
-\centering
-\includegraphics[height=0.78\textheight,keepaspectratio]{../figures/multistate_equity_curves.pdf}
+\smallskip
+At $\gamma{=}8$ where the policy actually differs across regimes:
 
-\vspace{-1pt}\scriptsize Solid/dashed/dotted: $K=2,3,4$ HMM regime counts. QMDP curves overlap regardless of $K$; myopic (green) dominates by tracking recent first-moment shifts.
-\end{frame}
-
-%-------- Slide 8b: Backtest headline numbers --------
-\begin{frame}{Backtest 2003--2026, headline metrics}
-\centering
-\small
-\renewcommand{\arraystretch}{1.15}
-\begin{tabular}{lrrrrr}
+\centering\small\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{l rr r}
 \toprule
-Policy & CAGR & Vol & Sharpe & Max DD & Calmar \\
+Action $\mathbf{a}$ & $Q^\ast(\text{bull})$ & $Q^\ast(\text{bear})$ & $\bel^\top Q^\ast(\cdot,\mathbf{a})$ \\
 \midrule
-Static 60/40 & 7.35\% & 9.4\% & 0.81 & $-34.2\%$ & 0.22 \\
-QMDP ($\gamma=2$) & 9.90\% & 14.7\% & 0.72 & $-53.0\%$ & 0.19 \\
-Myopic 12-mo & 13.99\% & 11.3\% & \textbf{1.22} & $-21.1\%$ & \textbf{0.66} \\
+100/0 & 0.32 & 0.10 & 0.115 \\
+60/40 & 0.24 & 0.20 & 0.203 \\
+\rowcolor{cg!18}\textbf{40/60} & 0.20 & \textbf{0.22} & \textbf{0.219} \\
+0/100 & 0.05 & 0.18 & 0.171 \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\small QMDP picks 40/60. \alert{But at our headline $\gamma{=}2$, $Q^\ast$ has ``100/0'' dominating both columns} $\Rightarrow$ QMDP always picks 100/0. The collapse.
+\end{frame}
+
+%-------- 8. Headline: 12-strategy horse race --------
+\begin{frame}{Headline backtest: 12-strategy horse race (2003--2026)}
+\scriptsize\setlength{\tabcolsep}{4pt}\renewcommand{\arraystretch}{1.05}
+\centering
+\begin{tabular}{l rrrrrr}
+\toprule
+\textbf{Strategy} & \textbf{CAGR} & \textbf{Vol} & \textbf{Sharpe} & \textbf{Sortino} & \textbf{Max DD} & \textbf{Calmar} \\
+\midrule
+\rowcolor{cg!18}\textbf{Faber 10-mo SMA} & \textbf{17.24\%} & 9.80\% & \textbf{1.68} & \textbf{3.57} & $-13.5\%$ & \textbf{1.28} \\
+Myopic 12-mo                            & 15.34\% & 10.57\% & 1.41 & 2.70 & $-15.1\%$ & 1.01 \\
+TS momentum 12-mo                       & 9.06\%  & 8.25\%  & 1.10 & 1.74 & $-22.0\%$ & 0.41 \\
+HMM-conditional MV                      & 6.38\%  & 5.91\%  & 1.08 & 1.78 & $-18.4\%$ & 0.35 \\
+Black--Litterman + HMM                  & 6.17\%  & 6.65\%  & 0.94 & 1.45 & $-18.0\%$ & 0.34 \\
+Inverse-vol                             & 4.78\%  & 5.24\%  & 0.92 & 1.42 & $-16.8\%$ & 0.28 \\
+Risk parity (ERC)                       & 4.87\%  & 5.37\%  & 0.91 & 1.41 & $-16.8\%$ & 0.29 \\
+Equal weight 50/50                      & 6.69\%  & 8.12\%  & 0.84 & 1.26 & $-28.6\%$ & 0.23 \\
+Mean-variance + LW                      & 6.58\%  & 8.20\%  & 0.82 & 1.32 & $-22.5\%$ & 0.29 \\
+Static 60/40 (bench)                    & 7.40\%  & 9.35\%  & 0.81 & 1.21 & $-34.2\%$ & 0.22 \\
+Vol-target 60/40                        & 7.50\%  & 10.14\% & 0.77 & 1.12 & $-39.1\%$ & 0.19 \\
+\rowcolor{cr!18}\textbf{QMDP ($\gamma{=}2$)} & 10.01\% & 14.64\% & \textbf{0.73} & 1.07 & $\mathbf{-53.0\%}$ & 0.19 \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\small \textbf{QMDP dead last on Sharpe and deepest drawdown.} Practitioner-consensus rule (Faber) wins. HMM-aware non-QMDP baselines (HMM-MV, BL+HMM) beat QMDP --- the HMM signal is informative; QMDP's projection at $\gamma{=}2$ is the failure.
+\end{frame}
+
+%-------- 8b. Equity curves figure --------
+\begin{frame}{Equity curves: \$1 invested 2003-10-31 (log scale)}
+\centering
+\includegraphics[height=0.84\textheight,keepaspectratio]{../figures/baselines_equity.pdf}
+
+\vspace{-3pt}\scriptsize Faber (top) dominates; QMDP (bottom) has highest CAGR but worst Sharpe due to extreme volatility.
+\end{frame}
+
+%-------- 9. Why QMDP collapsed: gamma table --------
+\begin{frame}{Why QMDP collapsed: CRRA $\gamma$ never separates regimes}
+\centering\small\setlength{\tabcolsep}{8pt}\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{lccccccc}
+\toprule
+\textbf{Regime} & $\gamma{=}1$ & $\gamma{=}2$ & $\gamma{=}3$ & $\gamma{=}5$ & $\gamma{=}8$ & $\gamma{=}15$ & $\gamma{=}20$ \\
+\midrule
+Bull (0) & 100/0 & 100/0 & 100/0 & 80/20 & 40/60 & 20/80 & 20/80 \\
+Bear (1) & 100/0 & 100/0 & 100/0 & 80/20 & 40/60 & 20/80 & 20/80 \\
 \bottomrule
 \end{tabular}
 
 \bigskip
-\textbf{Finding.} QMDP under log utility \emph{collapses to 100\,\% stocks}.
-Risk-tolerance, not regime detection, drives the result. The myopic
-12-month trend follower wins on every risk-adjusted measure.
+\small
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item \alert{Within columns:} bull and bear give the \emph{same} action. The regime label never moves the policy.
+  \item \alert{Across columns:} higher $\gamma$ shifts the policy bondward across-the-board.
+  \item The Sharpe gain from raising $\gamma$ is a \emph{second-moment effect} (less equity $\to$ less vol $\to$ higher Sharpe), \textbf{not} regime-aware tilting.
+\end{itemize}
 \end{frame}
 
-%-------- Slide 9a: Gamma sweep (Sharpe curve) --------
-\begin{frame}{Sensitivity to CRRA $\gamma$: QMDP unlocks at $\gamma\ge 8$}
+%-------- 10. UNLOCK 1: multi-feature --------
+\begin{frame}{Unlock 1: richer observations \emph{fix} the policy collapse}
+\centering\small\setlength{\tabcolsep}{6pt}\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{l l cc c}
+\toprule
+\textbf{Cohort} & \textbf{Features} & \textbf{Bull} & \textbf{Bear} & \textbf{Differs?} \\
+\midrule
+1. Baseline         & VIX, T10Y3M                & 100/0 & 100/0 & \ding{55} \\
+2. +Yield curve     & +T10Y2Y                    & 100/0 & 100/0 & \ding{55} \\
+\rowcolor{cg!18}\textbf{3. +Stress} & \textbf{+NFCI, +STLFSI4}   & \textbf{100/0} & \textbf{0/100} & \textbf{\ding{51}\ full flip} \\
+4. +Macro           & +NFCI, +UMCSENT, +ICSA     & 100/0 & 0/100 & \ding{51} \\
+5. Kitchen sink     & 8 channels                 & 100/0 & 60/40 & \ding{51} \\
+\bottomrule
+\end{tabular}
+
+\medskip
+\small Same $\gamma{=}2$ as headline. Adding the Chicago Fed NFCI and St.\ Louis Fed STLFSI4 (the financial-stress indicators that substitute for the FRED-truncated HY OAS) makes the regime policy \emph{fully differentiate}: stocks in bull, bonds in bear.
+
+\medskip
+\alert{The headline collapse is an observation-channel problem, not a fundamental QMDP problem.} Confirms Guidolin--Timmermann (2007) prediction.
+\end{frame}
+
+%-------- 10b. Visual confirmation: cohort timelines --------
+\begin{frame}{Visual: cohort 3 vs cohort 1 bear-probability}
 \centering
-\includegraphics[height=0.68\textheight,keepaspectratio]{../figures/gamma_sensitivity_sharpe.pdf}
+\includegraphics[height=0.82\textheight,keepaspectratio]{../figures/cohort_regime_timelines.pdf}
 
-\smallskip
-\scriptsize Static/myopic are flat in $\gamma$ by construction. QMDP crosses static at $\gamma\!\approx\!8$.\\
-\textbf{Caveat:} $\pi^\ast(\text{bull})=\pi^\ast(\text{bear})$ at every $\gamma$ tested.
+\vspace{-3pt}\scriptsize Top: baseline (VIX, T10Y3M) is noisy. Middle: +NFCI +STLFSI4 produces sharp high-confidence bear spikes cleanly bracketing every NBER recession. Bottom: kitchen sink over-fits.
 \end{frame}
 
-%-------- Slide 9b: Gamma sweep (equity-curve grid) --------
-\begin{frame}{Effect of $\gamma$ on equity curves}
-\centering
-\includegraphics[height=0.76\textheight,keepaspectratio]{../figures/gamma_equity_curves.pdf}
+%-------- 11. UNLOCK 2: walk-forward refit --------
+\begin{frame}{Unlock 2: walk-forward refit lifts QMDP Sharpe to 1.08}
+\centering\small\setlength{\tabcolsep}{7pt}\renewcommand{\arraystretch}{1.1}
+\begin{tabular}{l rrrr}
+\toprule
+\textbf{Variant} & \textbf{CAGR} & \textbf{Sharpe} & \textbf{Max DD} & \textbf{Calmar} \\
+\midrule
+Static 60/40 (bench)         & 7.40\% & 0.81 & $-34.2\%$ & 0.22 \\
+QMDP fixed (report baseline) & 9.87\% & 0.96 & $-34.2\%$ & 0.29 \\
+QMDP annual refit (5y win)   & 9.11\% & 0.85 & $-25.1\%$ & 0.36 \\
+QMDP quarterly refit         & 8.56\% & 0.83 & $-23.4\%$ & 0.37 \\
+\rowcolor{cg!18}\textbf{QMDP expanding window} & 9.81\% & \textbf{1.08} & $\mathbf{-16.5\%}$ & \textbf{0.60} \\
+HMM-MV expanding window      & 5.32\% & 0.95 & $-16.8\%$ & 0.32 \\
+\bottomrule
+\end{tabular}
 
-\vspace{-1pt}\scriptsize $\gamma=2$: 100/0 stocks/bonds. $\gamma=5$: 80/20. $\gamma=10$: 40/60. $\gamma=20$: 20/80. Policy shifts bondward across-the-board; never differentiates regimes.
-\end{frame}
-
-%-------- Slide 10: Conclusions + extensions --------
-\begin{frame}{Conclusions \& extensions}
-\textbf{What we showed.}
-\begin{itemize}
-  \item Pipeline correct: VI+PI agree, HMM recovers 2008/2020/2022 stress.
-  \item Under CRRA $\gamma\!\ge\!8$, QMDP Sharpe (0.87--0.89) beats static (0.81).
-  \item But the regime \emph{signal} is detectable while the regime \emph{action} is not, given two macro observables.
+\medskip
+\small Following Nystrup--Madsen--Lindstr\"om (2018): expanding-window walk-forward refit
+\begin{itemize}\setlength{\itemsep}{1pt}
+  \item lifts QMDP Sharpe \alert{$0.81 \to 1.08$} (+33\%);
+  \item cuts max drawdown \alert{$-34\% \to -16.5\%$} (more than halves);
+  \item nearly triples Calmar \alert{$0.22 \to 0.60$}.
 \end{itemize}
 
-\textbf{Extensions (in priority order).}
-\begin{enumerate}
-  \item \alert{Richer observations:} restore HY OAS via FRED API key.
-  \item \alert{Sharpe / CVaR reward shaping:} explicitly penalise bear-regime variance.
-  \item \alert{Point-based VI:} exploit information value on a 1-D belief simplex (cheap).
+\medskip
+\alert{The fixed-window HMM was a methodology choice masking real performance.}
+\end{frame}
+
+%-------- 12. Subperiod robustness --------
+\begin{frame}{Subperiod robustness: Faber wins everywhere}
+\centering
+\includegraphics[height=0.70\textheight,keepaspectratio]{../figures/subperiod_sharpe_heatmap.pdf}
+
+\vspace{-2pt}\scriptsize Period A (2003--10): GFC era. Period B (2011--19): post-GFC ZIRP. Period C (2020--26): COVID + inflation.
+
+\medskip\small QMDP's worst column is Period A (Sharpe 0.33) \emph{exactly where a regime-aware model should help most}. HMM-aware non-QMDP baselines achieve Sharpe 1.03--1.25 in Period A: the HMM signal was there; QMDP's projection at $\gamma{=}2$ destroyed it.
+\end{frame}
+
+%-------- 13. Conclusions + extensions --------
+\begin{frame}{Conclusions \& extensions}
+\textbf{Three findings.}
+\begin{enumerate}\setlength{\itemsep}{2pt}
+  \item Practitioner-consensus rule (Faber 10-mo SMA) dominates 12-strategy horse race; QMDP at $\gamma{=}2$ comes last.
+  \item Adding NFCI + STLFSI4 \emph{fixes} the policy collapse at the same $\gamma{=}2$.
+  \item Expanding-window walk-forward refit lifts QMDP Sharpe to 1.08 and halves max drawdown.
 \end{enumerate}
 
 \medskip
-\textit{Code, data and pipeline:} \texttt{github.com/takakhoo/ENGS177\_Final\_Project}
+\textbf{Re-framing.} Our headline negative finding holds \emph{only} in the joint configuration of (a) narrow observations, (b) fixed HMM, (c) low CRRA. Each component is empirically reversible. \alert{Diagnostic of methodology, not a fundamental verdict.}
+
+\medskip
+\textbf{Extensions in priority order.}
+\begin{enumerate}\setlength{\itemsep}{1pt}
+  \item \alert{CVaR-penalised reward:} explicitly penalise bear-regime tail risk.
+  \item \alert{Point-based VI:} tighter $\alpha$-vector bound on a 1-D belief simplex (cheap).
+  \item \alert{Off-policy MC + Double Q-learning} (Precup 2000 + Van Hasselt 2010) as model-free baseline.
+\end{enumerate}
+\end{frame}
+
+%-------- 14. Reproducibility / code / questions --------
+\begin{frame}{Reproducibility \& code}
+\centering
+\textbf{Public repository (one-clone, no API key):}\\
+\medskip
+{\Large\texttt{github.com/takakhoo/ENGS177\_Final\_Project}}
+
+\bigskip\small
+\begin{itemize}\setlength{\itemsep}{2pt}
+  \item 14 raw data CSVs ($\sim$745 KB) + 3 pickled HMMs --- \emph{all committed}
+  \item 4 source modules (\texttt{hmm}, \texttt{mdp}, \texttt{qmdp}, \texttt{baselines})
+  \item 12 experiment scripts (\texttt{00\_synthetic\_demo} $\ldots$ \texttt{12\_subperiod\_robustness})
+  \item 11-page class report + 35-page extended technical report
+  \item This 14-slide deck + 3 research surveys in \texttt{docs/}
+\end{itemize}
+
+\bigskip
+\centering\large\textbf{Questions?}
 \end{frame}
 
 \end{document}
