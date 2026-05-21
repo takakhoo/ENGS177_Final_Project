@@ -19,6 +19,7 @@
 \usepackage{listings}
 \usepackage{enumitem}
 \usepackage{float}
+\usepackage{colortbl}
 \usepackage{xcolor}
 \definecolor{cb}{HTML}{1f77b4}
 \definecolor{cr}{HTML}{d62728}
@@ -150,6 +151,120 @@ We make seven specific contributions over the original 10-page report.
   \item \textbf{Theoretical repositioning} via Powell's (2019) four-class taxonomy and explicit grounding in the supplementary papers (\Cref{sec:powell}).
   \item \textbf{Public reproducible repository} \texttt{takakhoo/ENGS177\_Final\_Project} containing all data (745~KB), 12 Python modules, and 10 experiment scripts.
 \end{enumerate}
+
+%================================================
+\section{Intuition Primer (Analogies for Every Moving Part)}\label{sec:intuition}
+%================================================
+
+\textit{This section is intentionally informal. If you read nothing else in this report, read this section. The math sections that follow will reference these analogies by name.}
+
+\subsection{The whole project, in one analogy}
+
+\textbf{Imagine you are a doctor.} Your patient is the stock-bond market. At every check-up (monthly rebalance) you must prescribe a treatment (portfolio weights). The patient is either ``healthy'' (bull regime) or ``sick'' (bear regime), but you cannot examine their internal state directly---you only see symptoms (VIX level, yield-curve slope). Different treatments work better in different states: aggressive stock exposure heals the healthy patient faster but kills the sick one. Your goal is to read the symptoms, infer the latent state, and prescribe accordingly.
+
+This is exactly a POMDP. The latent state $s_t$ is the regime; the observation $\mathbf{o}_t$ is the symptom vector (VIX, term spread); the action $\mathbf{a}_t$ is the portfolio weight; the reward $R(s,\mathbf{a})$ is the utility of the realised return; the transition $T(s'\mid s)$ is how diseases progress over time.
+
+\subsection{HMM as ``a casino dealer secretly switching decks''}
+
+\textbf{Imagine a poker dealer who, between rounds, secretly swaps between two decks.} Deck A has lots of high cards (the bull regime: positive expected returns). Deck B has lots of low cards (the bear regime: negative expected returns). You never see which deck the dealer is using. You only see the cards that come out.
+
+The Gaussian HMM is the formal model of this dealer:
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item The \emph{transition matrix} $T$ is the dealer's probability of switching decks between rounds. We estimate $\hat T \approx \begin{psmallmatrix}0.96 & 0.04\\ 0.06 & 0.94\end{psmallmatrix}$---the dealer is sticky, rarely switching.
+  \item The \emph{emission} $O(\mathbf{o}\mid s) = \mathcal{N}(\boldsymbol\mu_s, \boldsymbol\Sigma_s)$ is the distribution of cards (= observations) under each deck.
+  \item \emph{Baum--Welch} (EM) is how we figure out, from a long stream of cards we have seen, what each deck's card distribution must be and how often the dealer switches.
+\end{itemize}
+
+\subsection{The Bayes filter as ``updating your guess about which deck is in play''}
+
+After every card the dealer reveals, you update your guess about which deck is in play.
+
+\textbf{Predict step:} ``Even before seeing this card, the dealer might have switched''
+\[
+\hat b_t(s') = \sum_s T(s'\mid s)\,b_{t-1}(s).
+\]
+If you were 70\% sure it was Deck A last round and the switch probability is 4\%, you become 69\% sure for this round even without seeing anything.
+
+\textbf{Update step:} ``A high card just came out---more likely Deck A''
+\[
+b_t(s') \propto O(\mathbf{o}_t \mid s') \cdot \hat b_t(s').
+\]
+If the high card is much more likely under Deck A than Deck B, multiply $\hat b_t(A)$ by a big number and renormalise.
+
+This is exactly Equation~\ref{eq:bayes}. In our worked example (Section~\ref{sec:hmm}), one observation of VIX$=35$ (a ``low card'' under the bull dealer, high under the bear) flips belief from 70/30 bull to 93/7 bear in one step.
+
+\subsection{The MDP as ``the dealer dealt face-up''}
+
+\textbf{Suppose the dealer turned the decks face-up}---you could see at every moment which deck is being used. What's the best action in each deck? That's the underlying MDP. Solve the Bellman equation $V^\ast(s) = \max_a\{R(s,a) + \lambda\sum_{s'} T(s'\mid s) V^\ast(s')\}$ by value iteration or policy iteration. The answer is a table: ``in Deck A, bet 100\% on red; in Deck B, bet 100\% on black.''
+
+This is the easier sub-problem. Once we have $Q^\ast(s,a)$ (the value of taking action $a$ when you know you're in state $s$), the POMDP question becomes: given that I don't know which deck I'm in but I have a belief, what should I do?
+
+\subsection{QMDP as ``acting as if you knew the dealer secretly told you''}
+
+\textbf{The QMDP rule}: act as if the dealer privately whispered ``you're in Deck $s$ with probability $b(s)$,'' and then take the action that maximises your expected $Q^\ast$ under that whisper.
+
+Formally,
+\[
+\pi_{\rm QMDP}(\bel) = \argmax_a \sum_s b(s) Q^\ast(s, a).
+\]
+
+\textbf{Why this is a good heuristic and where it fails.} Good when one belief component dominates (Dirac measure $\to$ exact MDP). Fails when the optimal action would be to \emph{gather more information}---in our setup we cannot pull a lever to make the dealer reveal the deck, so this weakness does not bind.
+
+\textbf{Concrete numerical walkthrough.} Suppose your belief after seeing a high-VIX observation is $\bel = (0.07, 0.93)$ (the post-VIX-35 update from Section~\ref{sec:hmm}). And the (fully-observable) MDP has solved $Q^\ast$ as:
+\begin{center}\small
+\begin{tabular}{l rr r}
+\toprule
+Action & $Q^\ast(\text{bull})$ & $Q^\ast(\text{bear})$ & $\bel^\top Q^\ast(\cdot, a)$ \\
+\midrule
+100/0 (all stocks)& 0.32 & 0.10 & $0.07(0.32) + 0.93(0.10) = 0.115$ \\
+60/40             & 0.24 & 0.20 & $0.07(0.24) + 0.93(0.20) = 0.203$ \\
+\rowcolor{cb!10}\textbf{40/60} & 0.20 & 0.22 & $0.07(0.20) + 0.93(0.22) = \mathbf{0.219}$ \\
+0/100 (all bonds) & 0.05 & 0.18 & $0.07(0.05) + 0.93(0.18) = 0.171$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+QMDP picks 40/60 because its belief-weighted score is highest. The bear-heavy belief steers us toward a bond-heavy action; if the belief had been (0.93, 0.07) bull, QMDP would have picked 100/0. This is regime-aware tilting in action.
+
+\subsection{Why our QMDP collapsed at $\gamma{=}2$: ``a gambler with little risk aversion bets the same way regardless of suspicion''}
+
+The $Q^\ast$ table above (with regime-differentiated actions) appears only at $\gamma \geq 8$ in our calibrated MDP. At the headline $\gamma = 2$, every column of $Q^\ast$ has ``100\% stocks'' as the maximum. So no matter what the belief, $\bel^\top Q^\ast(\cdot, 100/0)$ is the highest. QMDP always picks 100\% stocks.
+
+\textbf{Analogy:} a gambler with low risk aversion has so much faith in expected value over downside that even when 93\% suspicious it's the ``bad deck,'' the long-run discounted continuation value of the high-EV action still wins. Only a sufficiently risk-averse gambler ($\gamma \geq 8$) lets the suspicion shift the policy.
+
+\subsection{Why richer observations fix it: ``more thermometers, better diagnosis''}
+
+Two thermometers (VIX, term spread) measure the same broad axis: how spooked is the equity market. They both rise during stress; they don't add independent information about the kind of stress.
+
+\textbf{Adding NFCI and STLFSI4} is like giving the doctor a blood test and an X-ray. NFCI integrates equity, bond, money-market, and shadow-banking signals. STLFSI4 aggregates 18 financial-stress indicators. They move \emph{differently from} VIX in subtle ways (e.g., during the 2022 inflation shock, VIX was moderate but NFCI/STLFSI spiked sharply). With these channels, the HMM can identify a richer bear regime---one where the conditional bond return is meaningfully higher than the conditional stock return, sharp enough that even a low-$\gamma$ MDP shifts toward bonds.
+
+Our cohort study (\Cref{sec:feature-cohort}) confirms this: with VIX+spread only, the regime label is non-actionable. Add NFCI+STLFSI4, and the same $\gamma{=}2$ MDP produces a fully regime-differentiated policy (100/0 in bull, 0/100 in bear).
+
+\subsection{Why walk-forward refit fixes it: ``re-reading the casino's recent hands''}
+
+A fixed HMM is like a player who learned the casino's house edges twenty years ago and never updated. The casino has changed since then---new dealers, new decks, different switching probabilities. Strategies based on stale parameters mis-time their bets.
+
+\textbf{Walk-forward expanding-window refit} re-estimates the HMM every year on all data observed up to that point. The HMM tracks slow drift in the regime moments (e.g., post-2008 the bear-state mean return became less negative as central banks intervened earlier). With proper refit, QMDP's Sharpe lifts from 0.81 to 1.08 in our backtest---a 33\% improvement just from re-reading the recent hands.
+
+\subsection{Why Faber wins: ``surf the wave instead of predicting which wave is coming''}
+
+\textbf{Time-series momentum / Faber 10-month moving-average:} hold an asset if its price is above its 10-month average, else move to cash. No regime model, no Bayesian filter, no MDP. Just: ``is the trend my friend right now?''
+
+Why it works: trend-following exploits \emph{persistence in returns} (momentum), which is a stylised fact across centuries (Hurst--Ooi--Pedersen 2017). It is the empirical sweet spot of robustness vs simplicity. Our 12-strategy horse race confirms: Faber dominates Sharpe 1.68 vs static 0.81 vs QMDP 0.73. The simpler model wins.
+
+\textbf{The lesson:} regime-aware allocation is theoretically appealing but empirically fragile. Even with all our diagnostic unlocks (richer observations, walk-forward refit, higher $\gamma$), our best QMDP variant achieves Sharpe 1.08---competitive with trend-following but not dominant.
+
+\subsection{The honest verdict}
+
+We do not claim that POMDP asset allocation beats simple trend-following. We claim:
+\begin{enumerate}[leftmargin=1.5em,itemsep=2pt]
+  \item The POMDP framework is the right \emph{minimum} tool for our decision problem (Powell's taxonomy positioning).
+  \item Our headline negative finding is a diagnostic of methodology, not fundamentals: it is reversed in isolation by richer observations, walk-forward refit, or higher CRRA.
+  \item The HMM signal itself is informative (HMM-MV and BL+HMM both beat QMDP); QMDP's projection at low $\gamma$ destroys it.
+  \item Trend-following is the bar that any decision-theoretic regime overlay must clear. We did not clear it.
+\end{enumerate}
+
+\textit{End of intuition primer. The remaining sections of this report provide the formal treatment, with references back to the analogies introduced here.}
 
 %================================================
 \section{Background and Related Work}\label{sec:related}
