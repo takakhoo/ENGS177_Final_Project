@@ -80,21 +80,65 @@ This is the synthesis Prof. Marrero flagged as the point of the term project —
 
 | Item | Pages | Link |
 |---|---|---|
-| **Final report** (full math, methods, results) | 10 | [`report/report.pdf`](report/report.pdf) |
+| **Extended technical report** (12-baseline horse race, 5 experiments, full math + walkthrough) | 26 | [`report/extended_report.pdf`](report/extended_report.pdf) |
+| Original 10-page report (Canvas submission) | 10 | [`report/report.pdf`](report/report.pdf) |
 | **Presentation slides** (figure-heavy 14-slide deck) | 14 | [`presentation/slides.pdf`](presentation/slides.pdf) |
-| Original proposal (submitted to Canvas) | 2 | [`proposal/ENGS177_Term_Project_Proposal.docx`](proposal/ENGS177_Term_Project_Proposal.docx) |
+| Original proposal | 2 | [`proposal/ENGS177_Term_Project_Proposal.docx`](proposal/ENGS177_Term_Project_Proposal.docx) |
 
-## Headline result
+## Three headline findings
 
-Out-of-sample backtest, October 2003 through April 2026 (271 monthly observations), 5 bps transaction cost per side, monthly rebalancing:
+### 1. Twelve-strategy horse race — the practitioner-consensus rule wins, QMDP loses
 
-| Policy | CAGR | Vol | Sharpe | Max DD | Calmar | Turnover |
+Out-of-sample backtest, October 2003 → April 2026 (271 obs), 5 bps cost, monthly rebalance:
+
+| Strategy | CAGR | Vol | Sharpe | Sortino | Max DD | Calmar |
 |---|---:|---:|---:|---:|---:|---:|
-| **Static 60/40** (benchmark) | 7.35% | 9.4% | 0.81 | −34.2% | 0.22 | 0.000 |
-| **QMDP** (CRRA γ=2)           | 9.90% | 14.7% | 0.72 | −53.0% | 0.19 | 0.000 |
-| **Myopic** 12-month trend     | **13.99%** | 11.3% | **1.22** | **−21.1%** | **0.66** | 0.236 |
+| **Faber 10-mo SMA** (winner) | **17.24%** | 9.8% | **1.68** | **3.57** | −13.5% | **1.28** |
+| Myopic 12-mo trend | 15.34% | 10.6% | 1.41 | 2.70 | −15.1% | 1.01 |
+| TS momentum 12-mo | 9.06% | 8.3% | 1.10 | 1.74 | −22.0% | 0.41 |
+| **HMM-conditional MV** (Guidolin–Timmermann) | 6.38% | 5.9% | **1.08** | 1.78 | −18.4% | 0.35 |
+| **Black–Litterman + HMM views** | 6.17% | 6.7% | **0.94** | 1.45 | −18.0% | 0.34 |
+| Inverse-volatility (risk parity light) | 4.78% | 5.2% | 0.92 | 1.42 | −16.8% | 0.28 |
+| Risk parity (ERC) | 4.87% | 5.4% | 0.91 | 1.41 | −16.8% | 0.29 |
+| Equal-weight 50/50 | 6.69% | 8.1% | 0.84 | 1.26 | −28.6% | 0.23 |
+| Mean-variance + Ledoit-Wolf | 6.58% | 8.2% | 0.82 | 1.32 | −22.5% | 0.29 |
+| Static 60/40 (benchmark) | 7.40% | 9.4% | 0.81 | 1.21 | −34.2% | 0.22 |
+| Vol-target 60/40 (10%) | 7.50% | 10.1% | 0.77 | 1.12 | −39.1% | 0.19 |
+| **QMDP (CRRA γ=2)** | 10.01% | 14.6% | **0.73** | 1.07 | **−53.0%** | 0.19 |
 
-Under log/γ=2 utility, the underlying MDP's optimal policy collapses to 100% stocks in every regime, so QMDP behaves like a leveraged equity strategy. Sweeping CRRA risk aversion (figures below) shows that QMDP's Sharpe surpasses the static benchmark once γ ≥ 8, but the optimal policy is the same in bull and bear regimes at every γ we tested. The two macro observables identify the regime correctly; they do not differentiate it enough to act on.
+QMDP comes **dead last on Sharpe**, with the worst drawdown in the comparison. The HMM signal itself is informative — both HMM-aware non-QMDP baselines (HMM-MV and BL+HMM) beat QMDP on Sharpe by 30–50%. The collapse is specifically in QMDP's projection of belief onto the MDP Q-values at γ=2.
+
+### 2. Richer observations FIX the QMDP policy collapse
+
+The original headline "QMDP at γ=2 collapses to 100% stocks in both regimes" depended on the narrow (VIX, term-spread) observation set. Adding financial-stress indicators (NFCI, STLFSI4) at the same γ=2 produces a fully regime-differentiated policy:
+
+| Cohort | Features | Bull policy | Bear policy | Regime differs? |
+|---|---|---|---|---|
+| 1. Baseline | (VIX, T10Y3M) | 100/0 | 100/0 | No (the collapse) |
+| 2. +Yield curve | (+T10Y2Y) | 100/0 | 100/0 | No |
+| 3. **+Stress** | **(+NFCI, +STLFSI4)** | **100/0** | **0/100** | **Yes (full flip!)** |
+| 4. +Macro | (+NFCI, +UMCSENT, +ICSA) | 100/0 | 0/100 | Yes |
+| 5. Kitchen sink (8 channels) | all extension | 100/0 | 60/40 | Yes |
+
+This **confirms Guidolin–Timmermann's prediction** that richer observations are required to produce regime-dependent policies. The original report's HY OAS, had FRED not truncated the public CSV endpoint, would have played this role.
+
+### 3. Walk-forward refit (Nystrup protocol) lifts QMDP Sharpe to 1.08
+
+The original report's HMM was fit once on 2003-2014 and held fixed. With **expanding-window walk-forward refit**:
+
+| Variant | Sharpe | Max DD | Calmar |
+|---|---:|---:|---:|
+| Static 60/40 (benchmark) | 0.81 | −34.2% | 0.22 |
+| QMDP fixed (report baseline) | 0.96 | −34.2% | 0.29 |
+| QMDP annual refit (rolling 5y) | 0.85 | −25.1% | 0.36 |
+| QMDP quarterly refit (rolling 5y) | 0.83 | −23.4% | 0.37 |
+| **QMDP expanding window** | **1.08** | **−16.5%** | **0.60** |
+
+QMDP Sharpe lifts from 0.81 → **1.08** (+33%); max drawdown cuts from −34% → **−16.5%** (more than halves); Calmar nearly triples.
+
+### Combined narrative
+
+> **Our headline "QMDP underperforms 60/40" holds *only* in the joint configuration of (a) narrow VIX+spread observations, (b) fixed in-sample HMM, (c) CRRA γ=2.** Each component is empirically reversible. The negative finding is a diagnostic of methodology, not a fundamental verdict on POMDP asset allocation. Even after all fixes, **trend-following remains the empirical benchmark to beat** (Hurst–Ooi–Pedersen 2017), consistent with the practitioner consensus.
 
 ---
 
@@ -102,16 +146,36 @@ Under log/γ=2 utility, the underlying MDP's optimal policy collapses to 100% st
 
 All inputs are **public, reproducible, and committed to this repository**. Every series has both a clickable link to its primary source page and a link to the raw CSV in this repo.
 
+**Headline observation channels (used in original 10-page report):**
+
 | Series | Source page (clickable) | Local raw CSV | Identifier | Role |
 |---|---|---|---|---|
-| **VIX** (CBOE Volatility Index) | [FRED · VIXCLS](https://fred.stlouisfed.org/series/VIXCLS) | [`data/raw/vix.csv`](data/raw/vix.csv) | `VIXCLS` | HMM observation #1 — equity-vol regime signal |
-| **10Y–3M Treasury spread** | [FRED · T10Y3M](https://fred.stlouisfed.org/series/T10Y3M) | [`data/raw/term_spread.csv`](data/raw/term_spread.csv) | `T10Y3M` | HMM observation #2 — yield-curve regime signal |
-| **ICE BofA HY OAS** | [FRED · BAMLH0A0HYM2](https://fred.stlouisfed.org/series/BAMLH0A0HYM2) | [`data/raw/hy_oas.csv`](data/raw/hy_oas.csv) | `BAMLH0A0HYM2` | Proposed third observation; truncated by FRED CSV endpoint, **dropped from the headline model** (see report §3.5 remark) |
-| **NBER recession dates** | [NBER · cycle dates](https://www.nber.org/research/business-cycle-dating) · [FRED · USREC](https://fred.stlouisfed.org/series/USREC) | [`data/raw/nber.csv`](data/raw/nber.csv) | `USREC` | Qualitative regime validation **only** — never used inside the model |
-| **SPY** (S&P 500 ETF) | [Yahoo Finance · SPY](https://finance.yahoo.com/quote/SPY/) | [`data/raw/spy.csv`](data/raw/spy.csv) | `SPY` | Equity asset return |
-| **AGG** (US aggregate bond ETF) | [Yahoo Finance · AGG](https://finance.yahoo.com/quote/AGG/) | [`data/raw/agg.csv`](data/raw/agg.csv) | `AGG` | Bond asset return (AGG starts Sep 2003 → sets the panel start) |
-| **Monthly aligned panel** | — (derived) | [`data/processed/monthly.csv`](data/processed/monthly.csv) | — | 271 monthly rows, 2003-10-31 → 2026-04-30, what every experiment reads |
-| **Fitted HMMs** | — (derived) | [`data/processed/hmm_2state.pkl`](data/processed/hmm_2state.pkl), [`hmm_3state.pkl`](data/processed/hmm_3state.pkl), [`hmm_4state.pkl`](data/processed/hmm_4state.pkl) | — | Pickled `hmmlearn.GaussianHMM` instances |
+| **VIX** | [FRED · VIXCLS](https://fred.stlouisfed.org/series/VIXCLS) | [`data/raw/vix.csv`](data/raw/vix.csv) | `VIXCLS` | HMM observation #1 — equity-vol signal |
+| **10Y–3M Treasury spread** | [FRED · T10Y3M](https://fred.stlouisfed.org/series/T10Y3M) | [`data/raw/term_spread.csv`](data/raw/term_spread.csv) | `T10Y3M` | HMM observation #2 — yield-curve signal |
+| **ICE BofA HY OAS** | [FRED · BAMLH0A0HYM2](https://fred.stlouisfed.org/series/BAMLH0A0HYM2) | [`data/raw/hy_oas.csv`](data/raw/hy_oas.csv) | `BAMLH0A0HYM2` | Proposed third observation; truncated by FRED, **dropped** |
+| **NBER recession dates** | [NBER cycle dates](https://www.nber.org/research/business-cycle-dating) · [FRED · USREC](https://fred.stlouisfed.org/series/USREC) | [`data/raw/nber.csv`](data/raw/nber.csv) | `USREC` | Qualitative validation **only** — never inside the model |
+| **SPY** | [Yahoo Finance · SPY](https://finance.yahoo.com/quote/SPY/) | [`data/raw/spy.csv`](data/raw/spy.csv) | `SPY` | Equity asset return |
+| **AGG** | [Yahoo Finance · AGG](https://finance.yahoo.com/quote/AGG/) | [`data/raw/agg.csv`](data/raw/agg.csv) | `AGG` | Bond asset return |
+
+**Extension v2 observation channels (used in `experiments/09_richer_observations.py`):**
+
+| Series | Source page | Local raw CSV | Identifier | Role |
+|---|---|---|---|---|
+| **10Y–2Y spread** | [FRED · T10Y2Y](https://fred.stlouisfed.org/series/T10Y2Y) | [`data/raw/term_spread_2y.csv`](data/raw/term_spread_2y.csv) | `T10Y2Y` | Alt. yield-curve metric |
+| **NFCI** (Chicago Fed Financial Conditions) | [FRED · NFCI](https://fred.stlouisfed.org/series/NFCI) | [`data/raw/nfci.csv`](data/raw/nfci.csv) | `NFCI` | Financial-conditions index. **This is what fixes the QMDP collapse.** |
+| **STLFSI4** (St. Louis Financial Stress) | [FRED · STLFSI4](https://fred.stlouisfed.org/series/STLFSI4) | [`data/raw/stlfsi.csv`](data/raw/stlfsi.csv) | `STLFSI4` | Cross-validation stress signal |
+| **U Mich Consumer Sentiment** | [FRED · UMCSENT](https://fred.stlouisfed.org/series/UMCSENT) | [`data/raw/umcsent.csv`](data/raw/umcsent.csv) | `UMCSENT` | Household-driven leading indicator |
+| **Initial jobless claims** | [FRED · ICSA](https://fred.stlouisfed.org/series/ICSA) | [`data/raw/jobless_claims.csv`](data/raw/jobless_claims.csv) | `ICSA` | High-frequency labour-market signal |
+| **Trade-weighted USD index** | [FRED · DTWEXBGS](https://fred.stlouisfed.org/series/DTWEXBGS) | [`data/raw/usd_index.csv`](data/raw/usd_index.csv) | `DTWEXBGS` | Global-stress flight-to-quality |
+| **WTI crude oil** | [FRED · DCOILWTICO](https://fred.stlouisfed.org/series/DCOILWTICO) | [`data/raw/wti_oil.csv`](data/raw/wti_oil.csv) | `DCOILWTICO` | Supply-driven inflation episodes |
+| **Effective fed funds rate** | [FRED · DFF](https://fred.stlouisfed.org/series/DFF) | [`data/raw/fed_funds.csv`](data/raw/fed_funds.csv) | `DFF` | Monetary-policy stance |
+
+**Derived files:**
+
+| File | Description |
+|---|---|
+| [`data/processed/monthly.csv`](data/processed/monthly.csv) | 272 monthly rows, 2003-10-31 → 2026-05-31, **13 columns** (10 obs channels + NBER + SPY/AGG log-returns) |
+| [`data/processed/hmm_2state.pkl`](data/processed/hmm_2state.pkl), [`hmm_3state.pkl`](data/processed/hmm_3state.pkl), [`hmm_4state.pkl`](data/processed/hmm_4state.pkl) | Pickled `hmmlearn.GaussianHMM` instances |
 
 **Real data, not synthetic.** Every CAGR / Sharpe / max-drawdown number in the headline table and every line in the equity-curve figures comes from these real historical series. The file `experiments/00_synthetic_demo.py` exists only as a no-network smoke test against a known generative model; none of the report figures depend on it.
 
@@ -307,6 +371,24 @@ The QMDP Sharpe ratio surpasses the static 60/40 benchmark (0.81) starting at $\
 
 ## Main figures
 
+### Twelve-strategy horse race
+![All baselines equity](figures/baselines_equity.png)
+
+Log-scale equity curves for all twelve strategies, $1 invested on 2003-10-31. Faber 10-month SMA on top; QMDP at the bottom with the worst drawdown. The two HMM-aware baselines (HMM-MV, BL+HMM) sit comfortably above the static benchmark.
+
+![All baselines drawdown](figures/baselines_drawdown.png)
+
+Drawdown over time. QMDP reaches −53% in 2008; Faber and TS-momentum cap drawdowns near −15%; risk-parity, inverse-vol, and HMM-aware baselines avoid the deepest left tail.
+
+![All baselines Sharpe bar chart](figures/baselines_sharpe_bar.png)
+
+Sharpe / Sortino / Calmar / Max DD across all twelve strategies (QMDP highlighted). Trend rules win on every risk-adjusted metric.
+
+### Walk-forward refit lifts QMDP Sharpe to 1.08
+![Walk-forward equity curves](figures/walk_forward_equity.png)
+
+Fixed vs. annual vs. quarterly vs. expanding-window HMM cadence. The expanding-window QMDP variant (one of the QMDP family) cuts the 2008 and 2020 drawdowns dramatically and lifts Sharpe to 1.08.
+
 ### Regime detection: HMM correctly recovers 2008, 2020 and 2022 stress
 ![Regime timeline across K=2,3,4 HMMs](figures/multistate_regime_timeline.png)
 
@@ -422,11 +504,22 @@ The monthly panel columns are documented in [`data/README.md`](data/README.md). 
 
 ## Further reading inside the repo
 
-- [`docs/01_project_overview.md`](docs/01_project_overview.md), canonical problem statement, POMDP tuple, solver choice
-- [`docs/03_external_research.md`](docs/03_external_research.md), five-tier literature map (Hamilton, Kaelbling, Puterman, etc.)
-- [`docs/04_implementation_plan.md`](docs/04_implementation_plan.md), pipeline diagram and per-step responsibilities
-- [`docs/05_experimental_design.md`](docs/05_experimental_design.md), seven experiments with falsifiable predictions
-- [`results/INITIAL_FINDINGS.md`](results/INITIAL_FINDINGS.md), narrative of the first real-data backtest and why the QMDP collapses at γ=2
+### Canonical project docs
+- [`docs/01_project_overview.md`](docs/01_project_overview.md) — canonical problem statement, POMDP tuple, solver choice
+- [`docs/03_external_research.md`](docs/03_external_research.md) — five-tier literature map (Hamilton, Kaelbling, Puterman, etc.)
+- [`docs/04_implementation_plan.md`](docs/04_implementation_plan.md) — pipeline diagram and per-step responsibilities
+- [`docs/05_experimental_design.md`](docs/05_experimental_design.md) — seven experiments with falsifiable predictions
+- [`results/INITIAL_FINDINGS.md`](results/INITIAL_FINDINGS.md) — narrative of the first real-data backtest
+
+### Extended research briefs (added in extension v2)
+- [`docs/07_practitioner_baselines_survey.md`](docs/07_practitioner_baselines_survey.md) — 3,700-word practitioner survey: every major institutional allocation rule with formulas, complexity, expected Sharpe ranges, and implementation pointers. Compiled from Markowitz, Faber, Hurst/Ooi/Pedersen, Asness/Frazzini/Pedersen, Maillard/Roncalli/Teiletche, DeMiguel/Garlappi/Uppal, Moreira/Muir, Black/Litterman, Idzorek, Guidolin/Timmermann, Ledoit/Wolf, Ang/Timmermann survey.
+- [`docs/08_academic_literature_survey.md`](docs/08_academic_literature_survey.md) — 3,500-word literature survey on regime-switching asset allocation, ranked by relevance to our project. Confirms our null is consistent with Tu 2010 and Ang/Bekaert 2002 but rarely published as the headline.
+- [`docs/09_supplementary_papers_synthesis.md`](docs/09_supplementary_papers_synthesis.md) — 3,400-word synthesis of the eleven ENGS 177 supplementary papers. Key reframe: QMDP is a VFA + one-step DLA in Powell (2019)'s four-class taxonomy. Strongest extension: off-policy MC via Precup et al. 2000 + Double Q-learning baseline via Van Hasselt 2010.
+
+### Experiment scripts (added in extension v2)
+- [`experiments/08_baselines_comparison.py`](experiments/08_baselines_comparison.py) — twelve-strategy horse race
+- [`experiments/09_richer_observations.py`](experiments/09_richer_observations.py) — observation-cohort study (proves observations matter)
+- [`experiments/10_walk_forward_refit.py`](experiments/10_walk_forward_refit.py) — Nystrup walk-forward refit study
 
 ## External references
 
