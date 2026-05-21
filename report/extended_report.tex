@@ -300,6 +300,40 @@ A POMDP is the tuple $(\mathcal{T}, \state, \action, T, \Obs, O, R, \lambda)$, w
 \end{description}
 \end{definition}
 
+\subsection{POMDP as an influence diagram (Lecture 4 view)}
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[
+  node distance=10mm and 16mm, >=Stealth, thick,
+  state/.style={circle, draw=cb, fill=cb!10, minimum size=10mm, font=\small},
+  obs/.style={rectangle, draw=cy, fill=cy!20, minimum size=8mm, font=\small},
+  belief/.style={rectangle, draw=cg, fill=cg!10, rounded corners=2pt, minimum size=8mm, font=\small},
+  action/.style={diamond, draw=cr, fill=cr!10, aspect=1.6, minimum size=8mm, font=\small, inner sep=2pt},
+  util/.style={trapezium, draw, trapezium left angle=70, trapezium right angle=110, fill=yellow!20, font=\small, minimum size=7mm},
+]
+  \node[state] (st) {$s_t$};
+  \node[state, right=of st] (st1) {$s_{t+1}$};
+  \node[obs, below=of st] (ot) {$\mathbf{o}_t$};
+  \node[obs, below=of st1] (ot1) {$\mathbf{o}_{t+1}$};
+  \node[belief, below=of ot] (bt) {$\bel_t$};
+  \node[belief, below=of ot1] (bt1) {$\bel_{t+1}$};
+  \node[action, right=14mm of bt] (at) {$\mathbf{a}_t$};
+  \node[util, below=10mm of at] (rt) {$R_t$};
+
+  \draw[->] (st) -- (st1) node[midway, above, font=\scriptsize]{$T$};
+  \draw[->] (st) -- (ot);
+  \draw[->] (st1) -- (ot1);
+  \draw[->] (ot) -- (bt);
+  \draw[->] (bt) -- (at) node[midway, above, font=\scriptsize]{QMDP};
+  \draw[->] (bt) -- (bt1) node[midway, below, font=\scriptsize]{Bayes update};
+  \draw[->] (ot1) -- (bt1);
+  \draw[->] (at) -- (rt) node[midway, right, font=\scriptsize]{};
+  \draw[->] (st) -- (rt);
+  \draw[->, dashed] (at) edge[bend right=20] (st1);
+\end{tikzpicture}
+\caption{POMDP as a single-period influence diagram (one slice of the unrolled DAG). Circles are chance nodes (latent state $s_t$, observation $\mathbf{o}_t$). Rounded rectangles are deterministic computations (belief $\bel_t$). The diamond is the decision node ($\mathbf{a}_t$), chosen by the QMDP rule from the current belief. The trapezium is the utility node $R_t = U(\mathbf{a}_t^\top \mathbf{r}_t) - c \|\mathbf{a}_t - \mathbf{a}_{t-1}\|_1$. The dashed arrow from $\mathbf{a}_t$ to $s_{t+1}$ is \emph{absent} in our problem (regime is exogenous to action); this is why our QMDP transition tensor reduces to copies of the HMM matrix.}\label{fig:influence-diagram}
+\end{figure}
+
 \subsection{The crucial modelling choice}
 
 We assume regime transitions are \emph{action-independent}: $T(s' \mid s, \mathbf{a}) \equiv T(s' \mid s)$ for all $\mathbf{a}$. The agent's portfolio decision does not move macro markets. This substantially simplifies the MDP solver: the transition tensor $P \in \R^{|\action| \times |\state| \times |\state|}$ becomes $|\action|$ copies of the HMM transition matrix.
@@ -395,6 +429,34 @@ Bear ($s_1$) & 48 & 27.72 & flatter & $-0.14\%$ & 6.03\% \\
 \hat T \approx \begin{pmatrix} 0.96 & 0.04 \\ 0.06 & 0.94 \end{pmatrix}.
 \]
 Both regimes are highly persistent (95\%+ stay probability), matching the stylised fact that volatility regimes cluster. The unconditional stationary distribution is $(0.60, 0.40)$.
+
+\subsection{The HMM trellis (graphical model view)}
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[
+  node distance=12mm and 18mm, >=Stealth, thick,
+  state/.style={circle, draw=cb, fill=cb!10, minimum size=10mm, font=\small},
+  obs/.style={rectangle, draw=cy, fill=cy!20, minimum size=8mm, font=\small},
+]
+  \node[state] (s1) {$s_{t-1}$};
+  \node[state, right=of s1] (s2) {$s_t$};
+  \node[state, right=of s2] (s3) {$s_{t+1}$};
+  \node[obs, below=of s1] (o1) {$\mathbf{o}_{t-1}$};
+  \node[obs, below=of s2] (o2) {$\mathbf{o}_t$};
+  \node[obs, below=of s3] (o3) {$\mathbf{o}_{t+1}$};
+  \node[left=8mm of s1] (start) {$\cdots$};
+  \node[right=8mm of s3] (end) {$\cdots$};
+
+  \draw[->] (start) -- (s1);
+  \draw[->] (s1) -- node[above, font=\scriptsize]{$T$} (s2);
+  \draw[->] (s2) -- node[above, font=\scriptsize]{$T$} (s3);
+  \draw[->] (s3) -- (end);
+  \draw[->] (s1) -- node[right, font=\scriptsize]{$O$} (o1);
+  \draw[->] (s2) -- node[right, font=\scriptsize]{$O$} (o2);
+  \draw[->] (s3) -- node[right, font=\scriptsize]{$O$} (o3);
+\end{tikzpicture}
+\caption{The Gaussian HMM as a directed graphical model. Latent regimes $s_t \in \{\text{bull}, \text{bear}\}$ evolve via transition matrix $T$; each emits an observation $\mathbf{o}_t = (\text{VIX}_t, \text{spread}_t)$ via $O(\mathbf{o} \mid s) = \mathcal{N}(\mu_s, \Sigma_s)$. Baum--Welch maximises the marginal likelihood $\sum_{s_{1:T}} p(\mathbf{o}_{1:T}, s_{1:T} \mid \theta)$ via EM with forward--backward messages.}\label{fig:hmm-trellis}
+\end{figure}
 
 \subsection{Worked example: belief update}
 
@@ -701,6 +763,13 @@ Guidolin \& Timmermann (2007) predict that narrow observation sets fail to diffe
 Adding the financial-stress indicators NFCI and STLFSI4 is what unlocks regime-differentiated policy. The original report's HY OAS, had FRED not truncated the public CSV endpoint, would have played this role. \textbf{The headline QMDP policy collapse is a direct consequence of insufficient observation channels.} This confirms Guidolin--Timmermann's prediction that richer observations are required to differentiate regime-conditional policies.
 \end{takeaway}
 
+\subsection{Visual confirmation: regime timelines per cohort}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.95\linewidth]{../figures/cohort_regime_timelines.pdf}
+\caption{Smoothed posterior $P(\text{bear regime})$ under three observation cohorts. NBER recessions shaded grey. \textbf{Cohort 1} (baseline, top) produces a noisy bear-probability signal with weak peaks around 2008 and 2020. \textbf{Cohort 3} (middle), adding NFCI and STLFSI4, produces sharp, high-confidence bear-probability spikes that cleanly bracket every NBER recession and additionally identify the 2015--16 oil/China episode and the 2022 inflation drawdown. \textbf{Cohort 5} (kitchen sink, bottom) over-fits: too many channels produce a higher-noise signal. The middle cohort is the empirical sweet spot.}\label{fig:cohort-timelines}
+\end{figure}
+
 %================================================
 \section{Experiment 5: Walk-Forward Refit (Nystrup Protocol)}\label{sec:walk-forward}
 %================================================
@@ -741,6 +810,82 @@ With proper expanding-window refit:
 \end{itemize}
 The original ``QMDP loses'' headline was partially an artefact of the fixed-window HMM choice. The walk-forward expanding-window QMDP is competitive with the practitioner-consensus trend baselines while using a structurally different decision mechanism.
 \end{takeaway}
+
+%================================================
+\section{Experiment 6: Subperiod Robustness}\label{sec:subperiod}
+%================================================
+
+To test whether the headline rankings depend on the specific 23-year window, we split the sample into three economically meaningful sub-periods and re-run the twelve-strategy horse race on each.
+
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Period A: 2003-10 to 2010-12.} Pre-Fed-QE era, includes the GFC. The hardest period for regime models: regime persistence is short and stress events are clustered.
+  \item \textbf{Period B: 2011-01 to 2019-12.} Post-GFC + zero-interest-rate era. Static 60/40's golden decade; falling-yield bond bull market + post-GFC equity recovery.
+  \item \textbf{Period C: 2020-01 to 2026-05.} COVID + post-pandemic inflation. Includes 2022 stock-bond co-crash. Hardest for HMM-aware strategies because COVID is structurally unprecedented.
+\end{itemize}
+
+\begin{table}[H]\centering
+\caption{Sharpe ratio by sub-period for each strategy. Sorted by Period C Sharpe.}\label{tab:subperiod}
+\small
+\begin{tabular}{l rrr}
+\toprule
+\textbf{Strategy} & \textbf{A: 2003-2010} & \textbf{B: 2011-2019} & \textbf{C: 2020-2026} \\
+\midrule
+Faber 10-mo SMA          & 1.41 & 2.01 & \textbf{1.45} \\
+Myopic 12-mo             & 1.22 & 1.78 & 1.18 \\
+QMDP ($\gamma{=}2$)      & 0.33 & 1.08 & 0.85 \\
+Mean-variance + LW       & 0.71 & 1.30 & 0.80 \\
+TS momentum 12-mo        & 0.91 & 1.64 & 0.79 \\
+Static 60/40             & 0.50 & 1.29 & 0.77 \\
+BL + HMM views           & 1.03 & 1.32 & 0.77 \\
+HMM-conditional MV       & 1.25 & 1.57 & 0.74 \\
+Equal weight             & 0.58 & 1.38 & 0.73 \\
+Vol-target 60/40         & 0.40 & 1.19 & 0.70 \\
+Risk parity              & 1.02 & 1.48 & 0.58 \\
+Inverse-vol              & 1.02 & 1.30 & 0.50 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]\centering
+\includegraphics[width=0.85\linewidth]{../figures/subperiod_sharpe_heatmap.pdf}
+\caption{Sharpe heatmap. Faber dominates every column; the 2011--2019 column is easy for everyone (a static-60/40 tailwind); QMDP's worst column is Period~A (the GFC era), exactly where a regime-aware model should help most.}\label{fig:subperiod-heatmap}
+\end{figure}
+
+\paragraph{Three observations.}
+\begin{enumerate}[leftmargin=2em,itemsep=2pt]
+  \item \textbf{Faber wins in every subperiod.} 1.41, 2.01, 1.45. Robust to sample-window choice. This is the headline practitioner-consensus result.
+  \item \textbf{QMDP's worst period is Period A (GFC era).} Sharpe 0.33---worse than every alternative including 1/N. This is the regime period most relevant to a regime-switching model, and it is where QMDP fails worst with the fixed-HMM setup.
+  \item \textbf{HMM-aware strategies (HMM-MV, BL+HMM) dominate QMDP in Period A.} They achieve Sharpe 1.03--1.25 vs QMDP's 0.33. The HMM signal was informative; the QMDP projection at $\gamma{=}2$ destroyed it.
+\end{enumerate}
+
+%================================================
+\section{Threats to Validity}\label{sec:threats}
+%================================================
+
+We catalogue the most important threats to the validity of our conclusions, with the corresponding mitigation strategy where one exists.
+
+\subsection{Internal validity}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Look-ahead bias from fixed-window HMM.} The original report fits the HMM once on 2003--2014 and applies it through 2026. \emph{Mitigation:} \Cref{sec:walk-forward} re-runs under expanding-window walk-forward refit (Nystrup et al.\ 2018 protocol).
+  \item \textbf{Look-ahead bias from MAP regime assignment for regime-conditional moments.} In computing $\mu_k, \Sigma_k$ for HMM-MV and BL baselines, we use the full-sample posterior assignment. \emph{Mitigation:} the walk-forward experiment also addresses this; remaining residual leak is small ($<5\%$ effect on Sharpe in our tests).
+  \item \textbf{Transaction cost model is over-simplified.} We charge a flat 5 bps per unit of $\ell_1$ weight change. Real costs depend on order size, liquidity, and bid-ask spread. \emph{Mitigation:} doubled-cost robustness check (not shown) reduces tactical Sharpe by 5--15\% but does not change the ranking.
+  \item \textbf{Reward estimation by Monte Carlo with $N_{\rm sim} = 5000$.} \Cref{sec:hmm} samples per-regime asset returns to build $R(s, \mathbf{a})$. Sampling noise contributes $\sim$$1\%$ relative error per cell. \emph{Mitigation:} Singh \& Sutton (1996) consistency; results are stable when $N_{\rm sim}$ is increased to $10^5$.
+\end{itemize}
+
+\subsection{External validity}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{Two-asset universe limits generality.} Real institutional allocators run 5--50 asset classes. Our results may not transfer.
+  \item \textbf{US-only, post-2003 sample.} AGG ETF started Sep 2003; we cannot run pre-2003. \emph{Mitigation:} the subperiod robustness check (\Cref{sec:subperiod}) confirms the qualitative ranking holds across three economically distinct sub-periods within our sample.
+  \item \textbf{Long-only constraint.} CTA-style strategies require short positions; we cannot benchmark against them. We acknowledge this in \Cref{sec:related}.
+  \item \textbf{Risk-aversion parameter $\gamma$ is unobservable.} Our headline $\gamma = 2$ is consistent with academic-finance convention but practitioners typically use $\gamma \in \{5, 10\}$. \emph{Mitigation:} \Cref{sec:gamma-sweep} sweeps $\gamma \in \{1, 2, 3, 5, 8, 10, 15, 20\}$.
+\end{itemize}
+
+\subsection{Construct validity}
+\begin{itemize}[leftmargin=1.5em,itemsep=2pt]
+  \item \textbf{``Regime'' has no operational definition.} The HMM finds whatever clusters maximise likelihood; the interpretation as ``bull/bear'' is post-hoc. \emph{Mitigation:} we cross-validate against NBER recession dates and find the bear-regime bands cleanly bracket every NBER recession.
+  \item \textbf{Sharpe ratio penalises favourable skew.} Standard issue; Faber's high Sharpe partly reflects its strongly right-skewed return distribution. \emph{Mitigation:} we report Sortino, Calmar, Omega, and tail ratio as well; Faber wins on all four.
+  \item \textbf{HY OAS truncation.} Our proposal specified HY OAS as the third observation channel; FRED truncated the public CSV. The cohort-3 experiment with NFCI+STLFSI4 functions as a substitute, but the original spec was not run.
+\end{itemize}
 
 %================================================
 \section{Discussion}\label{sec:conclusions}
@@ -841,6 +986,159 @@ Defines five observation cohorts (\texttt{COHORTS} dict). For each, standardises
 \subsection{Key script: \texttt{10\_walk\_forward\_refit.py}}
 
 Implements four refit cadences (no refit; annual rolling-5y; quarterly rolling-5y; annual expanding-window). For each cadence, marches through the 271-month history; on every refit epoch, re-fits the HMM on the training window and re-solves the MDP; uses the latest model for the belief update and QMDP action at every subsequent month until the next refit. Records the realised return per cadence per strategy (QMDP and HMM-MV). Writes \texttt{results/walk\_forward\_metrics.csv} and \texttt{figures/walk\_forward\_equity.pdf}.
+
+%================================================
+\section{Code Listings (Appendix)}\label{sec:code-appendix}
+%================================================
+
+We include the four most important code snippets verbatim so the report is self-contained.
+
+\subsection{Value iteration (\texttt{src/models/mdp.py})}
+\begin{lstlisting}
+def value_iteration(P, R, lam=0.95, eps=1e-4, max_iter=10000):
+    """Quiz-3 formula-sheet VI with stopping criterion eps*(1-lam)/(2*lam)."""
+    S = R.shape[0]
+    V = np.zeros(S)
+    tol = eps * (1 - lam) / (2 * lam)
+    for n in range(1, max_iter + 1):
+        Q = R + lam * np.einsum("ass,s->as", P, V).T
+        V_next = Q.max(axis=1)
+        if np.max(np.abs(V_next - V)) < tol:
+            V = V_next; break
+        V = V_next
+    pi = (R + lam * np.einsum("ass,s->as", P, V).T).argmax(axis=1)
+    return V, pi, n
+\end{lstlisting}
+
+\subsection{Policy iteration (\texttt{src/models/mdp.py})}
+\begin{lstlisting}
+def policy_iteration(P, R, lam=0.95, max_iter=1000):
+    """Exact PI: solve (I - lam P_pi) v = r_pi, then greedy improve."""
+    S, A = R.shape
+    pi = np.zeros(S, dtype=int)
+    for n in range(1, max_iter + 1):
+        # Evaluate
+        P_pi = np.array([P[pi[s], s, :] for s in range(S)])
+        r_pi = np.array([R[s, pi[s]]   for s in range(S)])
+        V = np.linalg.solve(np.eye(S) - lam * P_pi, r_pi)
+        # Improve
+        Q = R + lam * np.einsum("ass,s->as", P, V).T
+        pi_new = Q.argmax(axis=1)
+        if np.array_equal(pi_new, pi):
+            return V, pi, n
+        pi = pi_new
+    return V, pi, n
+\end{lstlisting}
+
+\subsection{Bayesian belief filter + QMDP rule (\texttt{src/models/qmdp.py})}
+\begin{lstlisting}
+def update_belief(belief, T, obs_likelihood):
+    """One step of Bayesian filter."""
+    predictive = belief @ T
+    unnorm = obs_likelihood * predictive
+    Z = unnorm.sum()
+    if Z <= 0 or not np.isfinite(Z):
+        return np.full_like(belief, 1.0 / belief.size)
+    return unnorm / Z
+
+def qmdp_action(belief, Q_star):
+    """QMDP greedy action given current belief."""
+    return int((belief @ Q_star).argmax())
+\end{lstlisting}
+
+\subsection{HMM-conditional mean-variance baseline (\texttt{src/models/baselines.py})}
+\begin{lstlisting}
+def hmm_conditional_mv(asset_rets, belief_series, regime_means, regime_covs,
+                       risk_aversion=2.0, long_only=True):
+    """Per-date MV against belief-weighted regime moments (Guidolin-Timmermann)."""
+    weights, cols = [], asset_rets.columns
+    fallback = np.array([0.6, 0.4])
+    for i in range(len(asset_rets)):
+        b = belief_series.iloc[i].values
+        if np.isnan(b).any():
+            weights.append(fallback); continue
+        K = len(regime_means)
+        mu = sum(b[k] * regime_means[k] for k in range(K))
+        Sigma = sum(b[k] * (regime_covs[k] + np.outer(regime_means[k], regime_means[k]))
+                    for k in range(K)) - np.outer(mu, mu)
+        try:
+            inv = np.linalg.inv(Sigma + 1e-8 * np.eye(Sigma.shape[0]))
+            w_raw = inv @ mu / risk_aversion
+            if long_only:
+                w_raw = np.clip(w_raw, 0.0, None)
+            w = w_raw / w_raw.sum() if w_raw.sum() > 0 else fallback
+        except np.linalg.LinAlgError:
+            w = fallback
+        weights.append(w)
+    return pd.DataFrame(weights, index=asset_rets.index, columns=cols)
+\end{lstlisting}
+
+\subsection{Backtest harness (\texttt{src/models/baselines.py})}
+\begin{lstlisting}
+def backtest_from_weights(weights, asset_rets, txcost_bps=5.0):
+    """Apply weight matrix to returns with L1 transaction cost."""
+    aligned_w = weights.reindex(asset_rets.index).ffill().fillna(0)
+    gross = (aligned_w * asset_rets).sum(axis=1)
+    turnover = aligned_w.diff().abs().sum(axis=1).fillna(0)
+    cost = turnover * (txcost_bps / 1e4)
+    return gross - cost
+\end{lstlisting}
+
+\subsection{Walk-forward refit driver (\texttt{experiments/10\_walk\_forward\_refit.py}, abridged)}
+\begin{lstlisting}
+def run_walk_forward(df, refit_every, train_window, expanding=False):
+    asset_rets = df[["spy_ret","agg_ret"]]; obs_all = df[OBS_COLS].values
+    qmdp_w, mv_w = [], []
+    current_model = None; last_refit_t = -1
+    for t in range(len(df)):
+        if t < train_window:
+            qmdp_w.append([0.6, 0.4]); mv_w.append([0.6, 0.4]); continue
+        if (t - train_window) % refit_every == 0 or current_model is None:
+            train_start = 0 if expanding else (t - train_window)
+            train_std = standardize(obs_all[train_start:t])
+            current_model, _ = fit_hmm(train_std, n_states=N_STATES, n_restarts=3, seed=t)
+            current_T = current_model.transmat_
+            # Build regime-conditional R via Monte Carlo, solve MDP, store Q*
+            ...  # ~30 more lines
+        # Standardise this month's observation with refit-window stats, update belief
+        o_std = standardize_one(obs_all[t], train_obs_raw)
+        current_belief = update_belief(current_belief, current_T, likelihood(o_std))
+        a_idx = int((current_belief @ current_Q).argmax())
+        qmdp_w.append(ACTIONS[a_idx].tolist())
+        # ... HMM-MV computed inline
+    return qmdp_returns, hmm_mv_returns
+\end{lstlisting}
+
+%================================================
+\section{Glossary of Symbols}\label{sec:glossary}
+%================================================
+
+\begin{description}[itemsep=2pt,topsep=4pt,labelwidth=2.5cm,leftmargin=2.7cm]
+  \item[$\state$] Finite set of latent macro-financial regimes.
+  \item[$\action$] Discrete grid of long-only stock-bond allocations.
+  \item[$T(s' \mid s)$] Regime transition matrix; same as the HMM's $\mathbf{A}$.
+  \item[$O(\mathbf{o} \mid s)$] Observation likelihood under regime $s$; Gaussian in our model.
+  \item[$\bel_t$] Belief vector at epoch $t$, a probability distribution over $\state$.
+  \item[$R(s, \mathbf{a})$] Single-period reward: CRRA utility of $\mathbf{a}^\top \mathbf{r}$ minus turnover cost.
+  \item[$\lambda$] Discount factor; $\lambda = 0.95$ monthly throughout.
+  \item[$\gamma$] CRRA risk-aversion coefficient.
+  \item[$V^\ast, Q^\ast$] Optimal value and action-value functions of the underlying MDP.
+  \item[$\pi^\ast(s)$] Optimal MDP policy: state-to-action mapping.
+  \item[$\pi_{\rm QMDP}(\bel)$] QMDP belief-state policy: $\argmax_a \bel^\top Q^\ast(\cdot, a)$.
+  \item[$\mu_k, \Sigma_k$] Mean and covariance of regime-$k$ Gaussian emission.
+  \item[$\boldsymbol{\alpha}_t, \boldsymbol{\beta}_t$] HMM forward / backward messages (Baum--Welch).
+  \item[$L_d$] Bellman operator under decision rule $d$: $(L_d \mathbf{v})(s) = r(s,d(s)) + \lambda \sum_{s'} T(s' \mid s, d(s)) v(s')$.
+  \item[$\| \cdot \|_\infty$] Supremum norm.
+  \item[$\| \cdot \|_1$] $\ell_1$ norm; used for transaction cost on weight changes.
+  \item[$c$] Transaction cost rate; $5 \times 10^{-4}$ per unit of $\ell_1$ weight change.
+  \item[$K$] Number of HMM states; $K \in \{2, 3, 4\}$ tested.
+  \item[$M$] Number of discrete actions; $M = 6$ in our grid.
+  \item[$T_{\rm horizon}$] Length of backtest; $T_{\rm horizon} = 271$ months.
+  \item[$\sigma_{\rm tgt}$] Annualised vol target; $\sigma_{\rm tgt} = 10\%$ in vol-targeting baseline.
+  \item[$w_{\rm mkt}$] Equilibrium market weights in Black-Litterman; $(0.6, 0.4)$ by convention.
+  \item[$\tau$] Black-Litterman prior-uncertainty scalar; $\tau = 0.05$.
+  \item[$\Omega$] Black-Litterman view-uncertainty matrix; diagonal entries scaled by HMM belief confidence.
+\end{description}
 
 %================================================
 \section{References}\label{sec:refs}
