@@ -78,12 +78,12 @@ This is the synthesis Prof. Marrero flagged as the point of the term project —
 
 ## Deliverables (click to download)
 
-| Item | Pages | Link |
-|---|---|---|
-| **Extended technical report** (12-baseline horse race, 5 experiments, full math + walkthrough) | 26 | [`report/extended_report.pdf`](report/extended_report.pdf) |
-| Original 10-page report (Canvas submission) | 10 | [`report/report.pdf`](report/report.pdf) |
-| **Presentation slides** (figure-heavy 14-slide deck) | 14 | [`presentation/slides.pdf`](presentation/slides.pdf) |
-| Original proposal | 2 | [`proposal/ENGS177_Term_Project_Proposal.docx`](proposal/ENGS177_Term_Project_Proposal.docx) |
+| Item | Pages | Audience | Link |
+|---|---|---|---|
+| **Class report** (Canvas submission, follows 8-10 body + refs spec) | 11 | Instructor + peer reviewers | [`report/report.pdf`](report/report.pdf) |
+| **Presentation slides** (17-frame deck for the 8-10 min talk) | 17 | Class presentation | [`presentation/slides.pdf`](presentation/slides.pdf) |
+| **Extended technical report** (analogies primer + full math + 11 baselines + code + glossary) | 38 | Teammates + depth seekers | [`report/extended_report.pdf`](report/extended_report.pdf) |
+| Original proposal (Canvas) | 2 | — | [`proposal/ENGS177_Term_Project_Proposal.docx`](proposal/ENGS177_Term_Project_Proposal.docx) |
 
 ## Three headline findings
 
