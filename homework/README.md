@@ -15,8 +15,8 @@ homework/
 ├── kdll/                     Kyle David Ledda-Lewaren
 │   ├── KDLL_HW2.pdf
 │   └── KDLL_HW3.pdf
-├── dario/                    Dario Blanco Morales  (placeholder — drop in)
-└── even/                     Even Hogberget        (placeholder — drop in)
+├── dario/                    Dario Blanco Morales  (placeholder, drop in)
+└── even/                     Even Hogberget        (placeholder, drop in)
 ```
 
 ## How to add yours (dario, even, or updates)
@@ -39,7 +39,7 @@ homework/
 
 ## Pointers to the project-relevant HW sections
 
-- **Taka HW2 §5** — full POMDP tuple, QMDP formulation, comparator policies.
-- **Taka HW3 P4** — progress update: HMM calibration done, QMDP implemented, preliminary backtest results.
-- **Taka HW3 P1** — inventory DP (not project, but reusable VI code).
-- **Taka HW3 P2** — 4-state stay/leave MDP (modified policy iteration + policy iteration, directly relevant to our MDP solver).
+- **Taka HW2 §5**, full POMDP tuple, QMDP formulation, comparator policies.
+- **Taka HW3 P4**, progress update: HMM calibration done, QMDP implemented, preliminary backtest results.
+- **Taka HW3 P1**, inventory DP (not project, but reusable VI code).
+- **Taka HW3 P2**, 4-state stay/leave MDP (modified policy iteration + policy iteration, directly relevant to our MDP solver).

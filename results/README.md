@@ -1,4 +1,4 @@
-# `results/` — Numerical Outputs of Every Experiment
+# `results/`, Numerical Outputs of Every Experiment
 
 > What each CSV is, who produces it, and which finding it supports.
 
@@ -8,14 +8,14 @@
 
 | File | Produced by | Headline finding it supports |
 |---|---|---|
-| [`baselines_metrics.csv`](baselines_metrics.csv) | `experiments/08_baselines_comparison.py` | Twelve-strategy horse race — Faber Sharpe 1.68 dominates; QMDP last at 0.73 |
+| [`baselines_metrics.csv`](baselines_metrics.csv) | `experiments/08_baselines_comparison.py` | Twelve-strategy horse race, Faber Sharpe 1.68 dominates; QMDP last at 0.73 |
 | [`baselines_returns.csv`](baselines_returns.csv) | `experiments/08_baselines_comparison.py` | Per-month return series for every strategy |
 | [`baselines_weights.csv`](baselines_weights.csv) | `experiments/08_baselines_comparison.py` | Per-month weights chosen by every strategy (long-form) |
-| [`multifeature_hmm_table.csv`](multifeature_hmm_table.csv) | `experiments/09_richer_observations.py` | Unlock 1 — adding NFCI + STLFSI4 differentiates the policy at γ=2 |
-| [`walk_forward_metrics.csv`](walk_forward_metrics.csv) | `experiments/10_walk_forward_refit.py` | Unlock 2 — expanding-window refit lifts QMDP Sharpe to 1.08 |
-| [`subperiod_metrics.csv`](subperiod_metrics.csv) | `experiments/12_subperiod_robustness.py` | Robustness — Faber dominates Period A/B/C; QMDP worst in GFC era |
-| [`gamma_sensitivity.csv`](gamma_sensitivity.csv) | `experiments/07_gamma_sensitivity.py` | γ-sweep — QMDP Sharpe crosses static at γ=8 |
-| [`gamma_policy_table.csv`](gamma_policy_table.csv) | `experiments/07_gamma_sensitivity.py` | π*(s) vs γ — same action in bull/bear at every γ |
+| [`multifeature_hmm_table.csv`](multifeature_hmm_table.csv) | `experiments/09_richer_observations.py` | Unlock 1, adding NFCI + STLFSI4 differentiates the policy at γ=2 |
+| [`walk_forward_metrics.csv`](walk_forward_metrics.csv) | `experiments/10_walk_forward_refit.py` | Unlock 2, expanding-window refit lifts QMDP Sharpe to 1.08 |
+| [`subperiod_metrics.csv`](subperiod_metrics.csv) | `experiments/12_subperiod_robustness.py` | Robustness, Faber dominates Period A/B/C; QMDP worst in GFC era |
+| [`gamma_sensitivity.csv`](gamma_sensitivity.csv) | `experiments/07_gamma_sensitivity.py` | γ-sweep, QMDP Sharpe crosses static at γ=8 |
+| [`gamma_policy_table.csv`](gamma_policy_table.csv) | `experiments/07_gamma_sensitivity.py` | π*(s) vs γ, same action in bull/bear at every γ |
 | [`multistate_metrics.csv`](multistate_metrics.csv) | `experiments/06_multistate_comparison.py` | K=2,3,4 backtest comparison |
 | [`multistate_policies.csv`](multistate_policies.csv) | `experiments/06_multistate_comparison.py` | K=2,3,4 optimal policies |
 | [`hmm_selection.csv`](hmm_selection.csv) | `experiments/02_hmm_calibration.py` | BIC + log-likelihood for K ∈ {2,3,4} |

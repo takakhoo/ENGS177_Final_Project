@@ -11,28 +11,28 @@ The returned DataFrame has one row per rebalance date and one column per asset
 strategy explicitly allows cash; see notes per function).
 
 Strategies implemented:
-  1. static_60_40              — textbook benchmark (Bogleheads, target-date funds).
-  2. equal_weight              — 1/N naive diversification (DeMiguel/Garlappi/Uppal 2009).
-  3. inverse_volatility        — "risk parity light"; weight by 1/sigma normalised.
-  4. risk_parity_2asset        — Maillard/Roncalli/Teiletche 2010 equal-risk-contribution
+  1. static_60_40             , textbook benchmark (Bogleheads, target-date funds).
+  2. equal_weight             , 1/N naive diversification (DeMiguel/Garlappi/Uppal 2009).
+  3. inverse_volatility       , "risk parity light"; weight by 1/sigma normalised.
+  4. risk_parity_2asset       , Maillard/Roncalli/Teiletche 2010 equal-risk-contribution
                                   closed form for 2 assets.
-  5. mean_variance_lw          — Markowitz with Ledoit-Wolf shrinkage covariance
+  5. mean_variance_lw         , Markowitz with Ledoit-Wolf shrinkage covariance
                                   (Ledoit & Wolf 2003, 2004), long-only no-leverage,
                                   rolling-window estimation.
-  6. faber_10mo_sma            — Faber 2007 "Quantitative Approach to TAA": hold asset
+  6. faber_10mo_sma           , Faber 2007 "Quantitative Approach to TAA": hold asset
                                   if price > 10-month MA, else move to the other asset
                                   (we don't have cash, so bonds are the safe leg).
-  7. ts_momentum_12mo          — Moskowitz/Ooi/Pedersen 2012 time-series momentum:
+  7. ts_momentum_12mo         , Moskowitz/Ooi/Pedersen 2012 time-series momentum:
                                   long the asset(s) with positive trailing-12-month
                                   excess return; if both negative, weight by sign+inverse-vol.
-  8. vol_target_60_40          — Hurst/Ooi/Pedersen volatility-targeting: scale the 60/40
+  8. vol_target_60_40         , Hurst/Ooi/Pedersen volatility-targeting: scale the 60/40
                                   exposure each month to hit an annualised vol target.
-  9. myopic_12mo               — Already in the main backtester but reproduced here for
+  9. myopic_12mo              , Already in the main backtester but reproduced here for
                                   parity (12-month rolling mean return scoring).
- 10. hmm_conditional_mv        — Guidolin/Timmermann-style HMM-conditional mean-variance:
+ 10. hmm_conditional_mv       , Guidolin/Timmermann-style HMM-conditional mean-variance:
                                   use the current belief over regimes to mix per-regime
                                   mean/covariance, then solve MV in closed form.
- 11. black_litterman_hmm_views — Black-Litterman 1992 with views derived from the HMM
+ 11. black_litterman_hmm_views, Black-Litterman 1992 with views derived from the HMM
                                   regime-conditional expected returns weighted by belief.
 
 References cited in docstrings; see the project's references.bib for full citations.
@@ -428,7 +428,7 @@ def black_litterman_hmm_views(
                 row = k * n + j
                 P[row, j] = 1.0
                 Q[row] = regime_means[k][j]
-        # Omega: diagonal, view variance scaled by belief — sure views (high belief)
+        # Omega: diagonal, view variance scaled by belief, sure views (high belief)
         # get low Omega so they pull the posterior toward themselves
         omega_diag = np.zeros(K * n)
         for k in range(K):

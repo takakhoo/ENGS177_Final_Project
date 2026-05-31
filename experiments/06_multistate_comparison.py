@@ -8,10 +8,10 @@ For each K we:
   5. Aggregate metrics + plot regime timelines and equity curves.
 
 Outputs:
-  results/multistate_metrics.csv     — one row per (K, policy)
-  results/multistate_policies.csv    — per-regime greedy actions for each K
-  figures/multistate_regime_timeline.pdf — 3-panel plot
-  figures/multistate_equity_curves.pdf   — overlay of all backtests
+  results/multistate_metrics.csv    , one row per (K, policy)
+  results/multistate_policies.csv   , per-regime greedy actions for each K
+  figures/multistate_regime_timeline.pdf, 3-panel plot
+  figures/multistate_equity_curves.pdf  , overlay of all backtests
 """
 from __future__ import annotations
 
@@ -32,6 +32,7 @@ apply_style()
 
 from src.models.mdp import value_iteration, policy_iteration, q_function  # noqa: E402
 from src.models.qmdp import update_belief, stationary_distribution         # noqa: E402
+from src.models.hmm import standardized_obs                                # noqa: E402
 from src.utils.metrics import summarize                                    # noqa: E402
 from src.utils.utility import expected_utility_per_regime                  # noqa: E402
 
@@ -60,7 +61,7 @@ def load_data():
 
 def regime_return_samples(df: pd.DataFrame, model, rng: np.random.Generator) -> dict[int, np.ndarray]:
     obs_cols = [c for c in ["vix", "term_spread", "hy_oas"] if c in df.columns]
-    states = model.predict(df[obs_cols].values)
+    states = model.predict(standardized_obs(df, obs_cols))
     out: dict[int, np.ndarray] = {}
     for k in range(model.n_components):
         mask = states == k
@@ -114,7 +115,7 @@ def run_policy(obs, asset_rets, T, means, covs, Q_star, policy_name):
 def run_for_K(df: pd.DataFrame, K: int) -> dict:
     """Full pipeline for one K. Returns dict with policies, metrics, etc."""
     obs_cols = [c for c in ["vix", "term_spread", "hy_oas"] if c in df.columns]
-    obs = df[obs_cols].values
+    obs = standardized_obs(df, obs_cols)   # belief filter must match fit-time space
     asset_rets = df[["spy_ret", "agg_ret"]]
 
     with open(DATA / f"hmm_{K}state.pkl", "rb") as f:
@@ -214,15 +215,15 @@ def main() -> None:
     ]
     for ax, K in zip(axes, (2, 3, 4)):
         run = runs[K]
-        proba = run["model"].predict_proba(df[obs_cols].values)
+        proba = run["model"].predict_proba(standardized_obs(df, obs_cols))
         bear = int(np.argmin([np.mean(df.loc[run["states"] == s, "spy_ret"]) for s in range(K)]))
         bear_prob = proba[:, bear]
         # NBER recession (background)
         ax.fill_between(df.index, 0, df["nber_recession"], color=PALETTE["nber"],
                         step="post", alpha=0.9, label="NBER recession", zorder=1)
-        # Bear probability as filled area — this is the headline
+        # Bear probability as filled area, this is the headline
         ax.fill_between(df.index, 0, bear_prob, color=PALETTE["bear"], alpha=0.45,
-                        zorder=3, label=f"P(bear) — state {bear}")
+                        zorder=3, label=f"P(bear), state {bear}")
         ax.plot(df.index, bear_prob, color=PALETTE["bear"], lw=1.6, zorder=4)
         # Other states as thin lines
         for s in range(K):
@@ -285,7 +286,7 @@ def main() -> None:
     ax.set_ylabel("Cumulative wealth (log scale), \\$1 at start of backtest")
     ax.set_xlabel("Date")
     ax.set_title(
-        "Out-of-sample backtest 2003–2026 — equity curves\n"
+        "Out-of-sample backtest 2003–2026, equity curves\n"
         "Solid / dashed / dotted: $K=2,3,4$ regimes.  Right labels: terminal wealth."
     )
     ax.legend(loc="upper left", ncol=2, fontsize=10)

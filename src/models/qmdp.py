@@ -34,8 +34,8 @@ def update_belief(
 
     Returns: (S,) posterior belief at t.
     """
-    predictive = belief @ T                # (S,) — predictive prior at t
-    unnorm = obs_likelihood * predictive    # (S,) — joint with observation
+    predictive = belief @ T                # (S,), predictive prior at t
+    unnorm = obs_likelihood * predictive    # (S,), joint with observation
     Z = unnorm.sum()
     if Z <= 0 or not np.isfinite(Z):
         # Numerical underflow: return uniform as fallback.

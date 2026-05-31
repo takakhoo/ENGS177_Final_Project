@@ -18,8 +18,8 @@ Observation-channel cohorts:
   Cohort 5 (kitchen sink): all 8 extension channels
 
 Outputs:
-  results/multifeature_hmm_table.csv — log-likelihood, BIC, conditional moments
-  results/multifeature_policies.csv  — pi*(s) for each cohort, K=2
+  results/multifeature_hmm_table.csv, log-likelihood, BIC, conditional moments
+  results/multifeature_policies.csv , pi*(s) for each cohort, K=2
   figures/multifeature_regimes.{pdf,png}
 """
 from __future__ import annotations
@@ -46,6 +46,7 @@ FIG = REPO / "figures"
 GAMMA = 2.0
 LAMBDA = 0.95
 N_SIM = 5000
+TRAIN_END = "2014-12-31"   # match canonical fit window (02_hmm_calibration.py); no look-ahead
 ACTIONS = np.array([
     [0.0, 1.0], [0.2, 0.8], [0.4, 0.6], [0.6, 0.4], [0.8, 0.2], [1.0, 0.0],
 ])
@@ -61,19 +62,23 @@ COHORTS = {
 
 
 def standardize(df: pd.DataFrame, cols: list[str]) -> np.ndarray:
-    """Standardize columns to zero-mean, unit-variance."""
+    """Standardize columns using TRAIN-window (<= TRAIN_END) mean/std, matching the
+    canonical fit methodology in 02_hmm_calibration.py. Returns (full_array, index)."""
     arr = df[cols].dropna()
-    mu = arr.mean(); sd = arr.std(ddof=0).replace(0, 1)
+    train = arr.loc[:TRAIN_END]
+    mu = train.mean(); sd = train.std(ddof=0).replace(0, 1)
     return ((arr - mu) / sd).values, arr.index
 
 
 def solve_for_cohort(df: pd.DataFrame, cohort_cols: list[str], n_states: int = 2):
-    """Fit HMM, derive regime-conditional reward, solve MDP, return policy."""
+    """Fit HMM (train-only), derive regime-conditional reward over the full sample,
+    solve MDP, return policy. Mirrors the canonical pipeline: fit <=2014, predict full."""
     obs, idx = standardize(df, cohort_cols)
-    # Skip rows where headline returns are missing (might overlap)
     asset_rets = df.loc[idx, ["spy_ret", "agg_ret"]].dropna()
     obs = obs[:len(asset_rets)]
-    model, ll = fit_hmm(obs, n_states=n_states, n_restarts=3)
+    # Fit on the training window only (no look-ahead), matching the canonical HMM.
+    n_train = int((idx <= pd.Timestamp(TRAIN_END)).sum())
+    model, ll = fit_hmm(obs[:n_train], n_states=n_states, n_restarts=5)
     bic_val = -2.0 * ll + (
         (n_states - 1) + n_states * (n_states - 1)
         + n_states * obs.shape[1]
@@ -154,7 +159,7 @@ def main() -> None:
         if len(avail) < 2:
             print(f"  [skip] cohort {cohort_name}: only {len(avail)} columns available.")
             continue
-        print(f"\n=== Cohort {cohort_name} — {avail} ===")
+        print(f"\n=== Cohort {cohort_name}, {avail} ===")
         try:
             r = solve_for_cohort(df, avail, n_states=2)
             print(f"  log L: {r['log_likelihood']:.2f}  BIC: {r['bic']:.2f}  VI iters: {r['iters_vi']}")

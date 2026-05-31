@@ -32,7 +32,7 @@ $w_t = (0.60, 0.40)^{\top}, \forall t$. Portfolio return $R^p_t = 0.6 R^{SPY}_t 
 
 **Reported numbers (Asness/Frazzini/Pedersen 2012; Anderson/Bianchi/Goldberg 2012):**
 - Unlevered SPY+AGG inverse-vol: Sharpe ~0.80–0.95, CAGR ~5–6%, max DD ~−15% (1990–2020).
-- 10%-vol-targeted (levered to match 60/40 vol): Sharpe ~0.85–1.00, CAGR ~7–8%, max DD ~−25% in 2022 (Bridgewater All Weather lost ~22% in 2022 — its worst year ever).
+- 10%-vol-targeted (levered to match 60/40 vol): Sharpe ~0.85–1.00, CAGR ~7–8%, max DD ~−25% in 2022 (Bridgewater All Weather lost ~22% in 2022, its worst year ever).
 
 ---
 
@@ -48,7 +48,7 @@ $w_t = (0.60, 0.40)^{\top}, \forall t$. Portfolio return $R^p_t = 0.6 R^{SPY}_t 
 
 **Rule.** $w_i = 1/N$. For SPY/AGG: $w = (0.5, 0.5)$ monthly.
 
-**Why it's the toughest baseline.** DGU 2009 — across 14 datasets, no optimization-based rule reliably beats 1/N out-of-sample. Sharpe ~0.72 for SPY+AGG 2003–2024.
+**Why it's the toughest baseline.** DGU 2009, across 14 datasets, no optimization-based rule reliably beats 1/N out-of-sample. Sharpe ~0.72 for SPY+AGG 2003–2024.
 
 ---
 
@@ -66,7 +66,7 @@ Whipsaws in choppy sideways markets (2011, 2015–16) cost performance. Shines i
 
 **Rule.** Per asset, position size $\propto \mathrm{sign}(\sum_{k=1}^{12} (r^i_{t-k} - r^{rf}_{t-k})) \cdot \sigma_{tgt}/\hat\sigma^i_t$.
 
-**Canonical implementation.** AQR Managed Futures, Man AHL, Winton, Aspect — the entire CTA industry. Hurst/Ooi/Pedersen "Century of Evidence" 2017: 9.8% gross return, 11.2% vol, Sharpe 0.77 for a diversified 67-market trend system 1880–2016, positive in every decade.
+**Canonical implementation.** AQR Managed Futures, Man AHL, Winton, Aspect, the entire CTA industry. Hurst/Ooi/Pedersen "Century of Evidence" 2017: 9.8% gross return, 11.2% vol, Sharpe 0.77 for a diversified 67-market trend system 1880–2016, positive in every decade.
 
 **Long-only SPY/AGG variant.** Apply per-asset; negative-signal → cash. Sharpe ~0.75–0.90 for the 2-asset case 2003–2024. Multi-lookback ensemble (1, 3, 6, 12-mo): Sharpe ~0.10–0.15 higher.
 
@@ -99,7 +99,7 @@ with $\pi = \gamma\Sigma w_{mkt}$ equilibrium prior, $P$ picking matrix, $Q$ vie
 
 **Rule.** Belief-weighted regime moments
 $\mu_t = \sum_k b_{t,k} \mu_k$,  $\Sigma_t = \sum_k b_{t,k} \Sigma_k + \sum_k b_{t,k} (\mu_k - \mu_t)(\mu_k - \mu_t)^\top$,
-then one-shot MV. The second term in $\Sigma_t$ is the regime-uncertainty contribution — the key Guidolin-Timmermann insight.
+then one-shot MV. The second term in $\Sigma_t$ is the regime-uncertainty contribution, the key Guidolin-Timmermann insight.
 
 **Reported numbers.** Guidolin/Timmermann 2008 on US stock + 10y bond 1954–2003: Sharpe lift ~0.10–0.20 in-sample; OOS improvement marginal and statistically insignificant. Ang/Timmermann 2012 survey: "regime-switching models reliably improve in-sample fit but rarely produce out-of-sample Sharpe gains exceeding 0.10 after transaction costs."
 
@@ -109,7 +109,7 @@ then one-shot MV. The second term in $\Sigma_t$ is the regime-uncertainty contri
 
 ## 10. CTA-Style Long-Short Trend (out of scope but worth mentioning)
 
-CTAs trade futures (commodities, rates, FX, equity indices) long *and* short, vol-targeted, multi-market. Sharpe 0.75–1.00 over multi-decade samples, positive in equity crises. Cannot be replicated in long-only SPY/AGG — mention in report's limitations: long-only 2-asset has a structural Sharpe ceiling no allocation rule can break.
+CTAs trade futures (commodities, rates, FX, equity indices) long *and* short, vol-targeted, multi-market. Sharpe 0.75–1.00 over multi-decade samples, positive in equity crises. Cannot be replicated in long-only SPY/AGG, mention in report's limitations: long-only 2-asset has a structural Sharpe ceiling no allocation rule can break.
 
 ---
 
@@ -117,12 +117,12 @@ CTAs trade futures (commodities, rates, FX, equity indices) long *and* short, vo
 
 | Provider | Fund family | Tactical component | Regime-aware? |
 |---|---|---|---|
-| Vanguard Target Retirement | $1.5T AUM | None — pure glide path | No |
+| Vanguard Target Retirement | $1.5T AUM | None, pure glide path | No |
 | Fidelity Freedom Index | $350B | None | No |
 | BlackRock LifePath | $400B | None | No |
 | T. Rowe Price Retirement | $350B | Moderate tactical ($\pm$10%) | No |
-| AQR Risk Parity / Style Premia | — | Vol-target + multi-asset trend | Partly (signals, not HMM) |
-| Bridgewater All Weather / Pure Alpha | — | Risk-parity + macro regime overlay | Pure Alpha yes |
+| AQR Risk Parity / Style Premia |, | Vol-target + multi-asset trend | Partly (signals, not HMM) |
+| Bridgewater All Weather / Pure Alpha |, | Risk-parity + macro regime overlay | Pure Alpha yes |
 
 Of >$3T in US target-date AUM, **less than 5% sits in funds running anything that could be called regime-aware**. Bridgewater Pure Alpha and a handful of risk-parity funds are the rare exceptions. Three reasons (fiduciary/career risk; capacity at scale; fee compression) explain why.
 
@@ -151,9 +151,9 @@ Ang/Timmermann 2012 (Annual Review of Financial Economics): *"The empirical evid
 Combines TS-mom and vol-targeting. Full-sample Sharpe 0.85 (single 12-mo) to 1.10 (multi-lookback ensemble + vol target) on SPY+AGG 1990–2024. Max DD reliably <−15%.
 
 What's documented *not* to beat trend on 2-asset:
-- HMM regime-switching alone — generally ties or slightly underperforms trend at much higher complexity.
-- Black-Litterman alone — provides stability, not alpha.
-- MV optimization with estimated moments — DGU 2009 showed it fails to beat 1/N.
+- HMM regime-switching alone, generally ties or slightly underperforms trend at much higher complexity.
+- Black-Litterman alone, provides stability, not alpha.
+- MV optimization with estimated moments, DGU 2009 showed it fails to beat 1/N.
 
 ---
 
@@ -193,4 +193,4 @@ What's documented *not* to beat trend on 2-asset:
 
 > "POMDP/QMDP regime-switching is theoretically appealing but empirically fragile; the simpler 12-month trend rule wins, consistent with the broader literature; the best tactical 2-asset rule is trend + vol-targeting + cash fallback. Our negative finding is the *standard* finding."
 
-This is the correct and well-supported narrative — far more interesting than a paper claiming QMDP wins.
+This is the correct and well-supported narrative, far more interesting than a paper claiming QMDP wins.

@@ -48,7 +48,7 @@ def fit_hmm(
         try:
             m.fit(obs)
             ll = m.score(obs)
-        except Exception as e:  # noqa: BLE001 — hmmlearn raises a few different things
+        except Exception as e:  # noqa: BLE001, hmmlearn raises a few different things
             print(f"  restart {r} failed: {e}")
             continue
         if ll > best_ll:
@@ -99,3 +99,25 @@ def standardize_with_train_stats(
     mu = train[cols].mean()
     sd = train[cols].std(ddof=0)
     return ((train[cols] - mu) / sd).values, ((full[cols] - mu) / sd).values
+
+
+# Train window used at fit time in 02_hmm_calibration.py. Any downstream call that
+# feeds observations to a pickled HMM MUST standardize with these same statistics,
+# because the pickled model's emission means/covariances live in z-scored space.
+HMM_TRAIN_END = "2014-12-31"
+
+
+def standardized_obs(
+    df: pd.DataFrame, cols: list[str], train_end: str = HMM_TRAIN_END
+) -> np.ndarray:
+    """Return df[cols] standardized with the training-window (<= train_end) mean/std.
+
+    This matches the fit-time standardization in 02_hmm_calibration.py exactly, so a
+    pickled HMM's predict / predict_proba / emission-likelihood calls are evaluated in
+    the same space the model was trained in. Feeding raw observations instead collapses
+    the belief onto a single regime (the standardization bug fixed in this revision).
+    """
+    train = df.loc[:train_end]
+    mu = train[cols].mean()
+    sd = train[cols].std(ddof=0).replace(0, 1.0)
+    return ((df[cols] - mu) / sd).values

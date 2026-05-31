@@ -6,7 +6,7 @@
 
 ## 1. The whole project, in one analogy
 
-**Imagine you are a doctor.** Your patient is the stock-bond market. At every check-up (monthly rebalance) you must prescribe a treatment (portfolio weights). The patient is either *healthy* (bull regime) or *sick* (bear regime), but you cannot examine their internal state directly — you only see symptoms (VIX level, yield-curve slope). Different treatments work better in different states. Your goal: read the symptoms, infer the latent state, prescribe accordingly.
+**Imagine you are a doctor.** Your patient is the stock-bond market. At every check-up (monthly rebalance) you must prescribe a treatment (portfolio weights). The patient is either *healthy* (bull regime) or *sick* (bear regime), but you cannot examine their internal state directly, you only see symptoms (VIX level, yield-curve slope). Different treatments work better in different states. Your goal: read the symptoms, infer the latent state, prescribe accordingly.
 
 This is exactly a POMDP. Latent state $s_t$ = regime; observation $\mathbf{o}_t$ = symptom vector; action $\mathbf{a}_t$ = portfolio weight; reward $R(s,\mathbf{a})$ = utility of realised return; transition $T(s'\mid s)$ = how diseases progress.
 
@@ -16,7 +16,7 @@ This is exactly a POMDP. Latent state $s_t$ = regime; observation $\mathbf{o}_t$
 
 **Imagine a poker dealer who, between rounds, secretly swaps between two decks.** Deck A has lots of high cards (the bull regime: positive expected returns). Deck B has lots of low cards (the bear regime: negative). You never see which deck is in play. You only see the cards.
 
-- **Transition matrix** $T$ = the dealer's probability of switching decks. We estimate $\hat T \approx [[0.96, 0.04], [0.06, 0.94]]$ — sticky.
+- **Transition matrix** $T$ = the dealer's probability of switching decks. We estimate $\hat T \approx [[0.96, 0.04], [0.06, 0.94]]$, sticky.
 - **Emission** $O(\mathbf{o}\mid s) = \mathcal{N}(\boldsymbol\mu_s, \boldsymbol\Sigma_s)$ = the card distribution under each deck.
 - **Baum–Welch** (EM) is how we figure out, from a long stream of observed cards, what each deck's distribution must be and how often the dealer switches.
 
@@ -27,7 +27,7 @@ This is exactly a POMDP. Latent state $s_t$ = regime; observation $\mathbf{o}_t$
 After every card the dealer reveals, you update your guess about which deck is active.
 
 - **Predict step:** "Even before seeing this card, the dealer might have switched." $\hat b_t(s') = \sum_s T(s'\mid s)\,b_{t-1}(s)$. If you were 70% sure it was Deck A last round and switch probability is 4%, you become 69% sure even without seeing anything.
-- **Update step:** "A high card just came out — more likely Deck A." $b_t(s') \propto O(\mathbf{o}_t \mid s') \cdot \hat b_t(s')$. Multiply by likelihood, renormalise.
+- **Update step:** "A high card just came out, more likely Deck A." $b_t(s') \propto O(\mathbf{o}_t \mid s') \cdot \hat b_t(s')$. Multiply by likelihood, renormalise.
 
 One observation of VIX=35 (a "low card" under the bull dealer, high under the bear) flips belief from 70/30 bull to 93/7 bear in one step. That responsiveness is the whole point of the filter.
 
@@ -35,7 +35,7 @@ One observation of VIX=35 (a "low card" under the bull dealer, high under the be
 
 ## 4. The MDP as "the dealer dealt face-up"
 
-**Suppose the dealer turned the decks face-up** — you can see at every moment which deck is in use. What's the best action in each deck? That's the underlying MDP. Solve the Bellman equation by value iteration or policy iteration. The answer is a table: "in Deck A, do X; in Deck B, do Y."
+**Suppose the dealer turned the decks face-up**, you can see at every moment which deck is in use. What's the best action in each deck? That's the underlying MDP. Solve the Bellman equation by value iteration or policy iteration. The answer is a table: "in Deck A, do X; in Deck B, do Y."
 
 This is the easier sub-problem. Once we have $Q^\ast(s,a)$ (value of taking action $a$ when we *know* we're in state $s$), the POMDP question becomes: given that I don't know which deck I'm in but I have a belief, what should I do?
 
@@ -70,7 +70,7 @@ A gambler with low risk aversion has so much faith in expected value over downsi
 
 Two thermometers (VIX, term spread) measure roughly the same axis: how spooked is the equity market. They rise together during stress; they don't add independent information.
 
-**Adding NFCI and STLFSI4** is like giving the doctor a blood test and an X-ray. NFCI integrates equity, bond, money-market, and shadow-banking signals. STLFSI4 aggregates 18 different stress indicators. They move *differently* from VIX in subtle ways — during the 2022 inflation shock, VIX was moderate but NFCI/STLFSI spiked sharply. With these channels the HMM can identify a richer bear regime where conditional bond return meaningfully beats conditional stock return — sharp enough that even a low-γ MDP shifts toward bonds.
+**Adding NFCI and STLFSI4** is like giving the doctor a blood test and an X-ray. NFCI integrates equity, bond, money-market, and shadow-banking signals. STLFSI4 aggregates 18 different stress indicators. They move *differently* from VIX in subtle ways, during the 2022 inflation shock, VIX was moderate but NFCI/STLFSI spiked sharply. With these channels the HMM can identify a richer bear regime where conditional bond return meaningfully beats conditional stock return, sharp enough that even a low-γ MDP shifts toward bonds.
 
 Our cohort study confirms: VIX+spread only → regime label non-actionable. Add NFCI+STLFSI4 → same γ=2 MDP produces fully regime-differentiated policy (100/0 bull, 0/100 bear).
 
@@ -78,9 +78,9 @@ Our cohort study confirms: VIX+spread only → regime label non-actionable. Add 
 
 ## 8. Why walk-forward refit fixes it: "re-reading the casino's recent hands"
 
-A fixed HMM is like a player who learned the casino's house edges 20 years ago and never updated. The casino has changed since then — new dealers, new decks, different switching probabilities. Strategies based on stale parameters mis-time their bets.
+A fixed HMM is like a player who learned the casino's house edges 20 years ago and never updated. The casino has changed since then, new dealers, new decks, different switching probabilities. Strategies based on stale parameters mis-time their bets.
 
-**Walk-forward expanding-window refit** re-estimates the HMM every year using all data observed up to that point. The model tracks slow drift in regime moments (e.g., post-2008 the bear-state mean became less negative as central banks intervened earlier). With proper refit, QMDP's Sharpe lifts 0.81 → 1.08 — a 33% improvement just from re-reading the recent hands.
+**Walk-forward expanding-window refit** re-estimates the HMM every year using all data observed up to that point. The model tracks slow drift in regime moments (e.g., post-2008 the bear-state mean became less negative as central banks intervened earlier). With proper refit, QMDP's Sharpe lifts 0.81 → 1.08, a 33% improvement just from re-reading the recent hands.
 
 ---
 
@@ -88,9 +88,9 @@ A fixed HMM is like a player who learned the casino's house edges 20 years ago a
 
 **Time-series momentum / Faber 10-month moving-average:** hold an asset if its price is above its 10-month average, else move to cash. No regime model, no Bayesian filter, no MDP. Just: "is the trend my friend right now?"
 
-Why it works: trend-following exploits *persistence in returns* (momentum), which is a stylised fact across centuries (Hurst–Ooi–Pedersen 2017). It is the empirical sweet spot of robustness vs simplicity. Our 12-strategy horse race confirms: Faber dominates Sharpe 1.68 vs static 0.81 vs QMDP 0.73. The simpler model wins because it doesn't try to predict the wave — it just rides it.
+Why it works: trend-following exploits *persistence in returns* (momentum), which is a stylised fact across centuries (Hurst–Ooi–Pedersen 2017). It is the empirical sweet spot of robustness vs simplicity. Our 12-strategy horse race confirms: Faber dominates Sharpe 1.68 vs static 0.81 vs QMDP 0.73. The simpler model wins because it doesn't try to predict the wave, it just rides it.
 
-**The lesson:** regime-aware allocation is theoretically appealing but empirically fragile. Even with all our diagnostic unlocks (richer observations + walk-forward refit + higher γ), our best QMDP variant achieves Sharpe 1.08 — competitive with trend-following but not dominant.
+**The lesson:** regime-aware allocation is theoretically appealing but empirically fragile. Even with all our diagnostic unlocks (richer observations + walk-forward refit + higher γ), our best QMDP variant achieves Sharpe 1.08, competitive with trend-following but not dominant.
 
 ---
 

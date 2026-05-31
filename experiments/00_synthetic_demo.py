@@ -153,7 +153,7 @@ def main():
     for name, r in results.items():
         ax1.plot(r.index, (1 + r).cumprod(), label=name, lw=1.4)
     ax1.set_yscale("log"); ax1.legend(); ax1.set_ylabel("Cumulative wealth (log)")
-    ax1.set_title("Synthetic 25-year backtest — QMDP vs Myopic vs Static 60/40")
+    ax1.set_title("Synthetic 25-year backtest, QMDP vs Myopic vs Static 60/40")
 
     ax2.fill_between(pd.date_range("2000-01-31", periods=len(obs), freq="ME"),
                      0, (states == 1).astype(int), step="post", color="0.85", label="bear regime")

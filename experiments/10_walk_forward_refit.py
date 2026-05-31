@@ -6,10 +6,10 @@ it has not yet observed. Nystrup et al. (2018) argue this matters and recommend
 annual or quarterly refitting.
 
 This experiment compares:
-  Variant A — Fixed HMM (current report baseline)
-  Variant B — Annual refit (fit on rolling 5y window, applied for next 12 months)
-  Variant C — Quarterly refit (same window, faster updates)
-  Variant D — Expanding-window refit (use ALL prior data, refit yearly)
+  Variant A, Fixed HMM (current report baseline)
+  Variant B, Annual refit (fit on rolling 5y window, applied for next 12 months)
+  Variant C, Quarterly refit (same window, faster updates)
+  Variant D, Expanding-window refit (use ALL prior data, refit yearly)
 
 For each variant we backtest QMDP and the HMM-conditional MV baseline (the most
 HMM-dependent strategies). Static 60/40 is the no-HMM benchmark.

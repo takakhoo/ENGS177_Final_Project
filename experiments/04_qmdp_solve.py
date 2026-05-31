@@ -11,6 +11,7 @@ REPO = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(REPO))
 
 from src.models.mdp import value_iteration, policy_iteration, q_function  # noqa: E402
+from src.models.hmm import standardized_obs                                # noqa: E402
 from src.utils.utility import expected_utility_per_regime                  # noqa: E402
 
 DATA = REPO / "data" / "processed"
@@ -46,7 +47,8 @@ def simulate_regime_returns(model, n_sim: int, rng: np.random.Generator) -> dict
     dc = "DATE" if "DATE" in df.columns else df.columns[0]
     df[dc] = pd.to_datetime(df[dc]); df = df.set_index(dc)
     obs_cols = [c for c in ["vix", "term_spread", "hy_oas"] if c in df.columns]
-    states = model.predict(df[obs_cols].values)
+    # Standardize with fit-time train stats: the pickled HMM lives in z-scored space.
+    states = model.predict(standardized_obs(df, obs_cols))
     out: dict[int, np.ndarray] = {}
     for k in range(model.n_components):
         mask = states == k

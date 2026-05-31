@@ -88,8 +88,8 @@ The 60/40 portfolio assumes a stable joint return distribution. Reality violates
 \bigskip
 
 \begin{itemize}\setlength{\itemsep}{6pt}
-  \item \alert{Conditional heteroskedasticity} --- calm decades broken by short crises (2008, 2020, 2022).
-  \item \alert{Stress correlation} --- in crises, stocks and bonds sell off \emph{together}. Diversification erodes exactly when it's most needed.
+  \item \alert{Conditional heteroskedasticity}: calm decades broken by short crises (2008, 2020, 2022).
+  \item \alert{Stress correlation}: in crises, stocks and bonds sell off \emph{together}. Diversification erodes exactly when it's most needed.
 \end{itemize}
 
 \bigskip\bigskip
@@ -149,7 +149,7 @@ You are a doctor. Your patient is the market.
 
 \bigskip
 \begin{itemize}\setlength{\itemsep}{4pt}
-  \item Patient is \emph{healthy} (bull) or \emph{sick} (bear) --- but you can't examine directly.
+  \item Patient is \emph{healthy} (bull) or \emph{sick} (bear), but you can't examine directly.
   \item You only see symptoms (VIX, term spread).
   \item Different treatments (portfolio weights) work better in different states.
   \item Goal: \alert{read the symptoms, infer the state, prescribe}.
@@ -179,7 +179,7 @@ A poker dealer secretly swaps between two decks between rounds. You never see wh
 \bigskip
 
 \begin{itemize}\setlength{\itemsep}{4pt}
-  \item \alert{Transition matrix $T$:} how often the dealer switches. We estimate $\hat T \approx \begin{psmallmatrix}0.96 & 0.04\\ 0.06 & 0.94\end{psmallmatrix}$ --- sticky.
+  \item \alert{Transition matrix $T$:} how often the dealer switches. We estimate $\hat T \approx \begin{psmallmatrix}0.96 & 0.04\\ 0.06 & 0.94\end{psmallmatrix}$ (sticky: rarely switches).
   \item \alert{Emission $O(\mathbf{o}\mid s)$:} the card distribution under each deck. Gaussian: $\mathcal{N}(\boldsymbol\mu_s, \boldsymbol\Sigma_s)$.
   \item \alert{Baum--Welch (EM):} from a long stream of cards, figure out each deck and the switch rate.
 \end{itemize}
@@ -197,7 +197,7 @@ After each card, you update your guess.
 $\quad\hat b_t(s') = \sum_s T(s'\mid s)\,b_{t-1}(s).$
 
 \medskip
-\textbf{Update:} ``A high card just came out --- much more likely Deck A.''\\[2pt]
+\textbf{Update:} ``A high card just came out, so it's much more likely Deck A.''\\[2pt]
 $\quad b_t(s') \propto O(\mathbf{o}_t\mid s')\cdot\hat b_t(s').$
 
 \bigskip
@@ -212,7 +212,7 @@ $\quad b_t(s') \propto O(\mathbf{o}_t\mid s')\cdot\hat b_t(s').$
 
 % --- 9. Analogy 4: MDP ---
 \begin{frame}{Analogy 4: ``what if the dealer dealt face-up?'' (= MDP)}
-Suppose the dealer turned the decks face-up --- you can see which deck is in use at every moment.
+Suppose the dealer turned the decks face-up, so you can see which deck is in use at every moment.
 
 \bigskip
 What's the best action in each deck? Solve the Bellman equation:
@@ -245,7 +245,7 @@ QMDP rule: act as if the dealer privately whispered ``you're in Deck $s$ with pr
 \begin{itemize}
   \item Exact when $\mathbf{b}$ is a Dirac (fully observable limit).
   \item Cheap: reuses the MDP solver, no new optimisation per decision.
-  \item Weakness: can't motivate information-gathering --- doesn't bind here, regimes are exogenous.
+  \item Weakness: can't motivate information-gathering. Doesn't bind here, regimes are exogenous.
 \end{itemize}
 \end{frame}
 
@@ -261,7 +261,7 @@ QMDP rule: act as if the dealer privately whispered ``you're in Deck $s$ with pr
 \midrule
 Decision tree         & Explodes combinatorially with horizon \\
 Influence diagram     & Same blow-up, not natural for repeated rebalance \\
-Fully-observable MDP  & Requires knowing the regime --- but it is \emph{latent} \\
+Fully-observable MDP  & Requires knowing the regime, but it is \emph{latent} \\
 \rowcolor{cb!10}\textbf{POMDP} & \textbf{Hidden state + noisy obs + sequential decision} \\
 \bottomrule
 \end{tabular}
@@ -349,7 +349,7 @@ Bear (state 1) & 48 & $-0.14$ & 27.7 \\
 $\hat T \approx \begin{pmatrix}0.96 & 0.04 \\ 0.06 & 0.94\end{pmatrix}$
 
 \bigskip
-\small Both regimes are 95\%+ sticky --- the dealer rarely switches decks.
+\small Both regimes are 95\%+ sticky: the dealer rarely switches decks.
 \end{frame}
 
 % --- 16. VI = PI ---
@@ -446,7 +446,7 @@ Static 60/40\ $\cdot$\ Equal weight\ $\cdot$\ Inverse vol\ $\cdot$\ Risk parity\
 \end{frame}
 
 % --- 20. Horse race top half ---
-\begin{frame}{Twelve-strategy horse race --- the leaders}
+\begin{frame}{Twelve-strategy horse race: the leaders}
 \centering\scriptsize\setlength{\tabcolsep}{5pt}\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{l rrrrrr}
 \toprule
@@ -466,7 +466,7 @@ Faber's simple trend rule \alert{dominates} on Sharpe, Sortino, and Calmar with 
 \end{frame}
 
 % --- 21. Horse race bottom half ---
-\begin{frame}{Twelve-strategy horse race --- the laggards}
+\begin{frame}{Twelve-strategy horse race: the laggards}
 \centering\scriptsize\setlength{\tabcolsep}{5pt}\renewcommand{\arraystretch}{1.15}
 \begin{tabular}{l rrrrrr}
 \toprule
@@ -482,7 +482,7 @@ Vol-target 60/40                         & 7.50\%  & 10.14\% & 0.77 & 1.12 & $-3
 \end{tabular}
 
 \medskip\small
-\alert{QMDP finishes dead last on Sharpe} with the deepest drawdown of the twelve. The two HMM-aware non-QMDP baselines (HMM-MV, BL+HMM) \emph{above} 60/40 --- the HMM signal IS informative.
+\alert{QMDP finishes dead last on Sharpe} with the deepest drawdown of the twelve. The two HMM-aware non-QMDP baselines (HMM-MV, BL+HMM) sit \emph{above} 60/40: the HMM signal IS informative.
 \end{frame}
 
 % --- 22. Equity curves figure ---
@@ -548,7 +548,7 @@ bets the same way \emph{regardless} of suspicion.
 \begin{tikzpicture}
 \node[hook,text width=0.86\textwidth]{
   \small\centering
-  At $\gamma{=}2$, the long-run discounted continuation value of the high-EV action dominates the single-period downside --- even when the belief is 93\% bear.\\
+  At $\gamma{=}2$, the long-run discounted continuation value of the high-EV action dominates the single-period downside, even when the belief is 93\% bear.\\
   \medskip
   \textbf{Only $\gamma \geq 8$ lets suspicion shift the policy.}
 };
@@ -562,7 +562,7 @@ bets the same way \emph{regardless} of suspicion.
 %=========== ACT 6: THE UNLOCKS ===========
 
 % --- 26. Setup for unlocks ---
-\begin{frame}{Wait --- what if we changed \emph{one} thing?}
+\begin{frame}{Wait. What if we changed \emph{one} thing?}
 \bigskip
 \centering
 \large
@@ -720,11 +720,11 @@ Three components separately reverse the negative finding. & Our gains net of tra
 \begin{frame}{Three extensions in priority order}
 \bigskip
 \begin{enumerate}\setlength{\itemsep}{12pt}
-  \item \alert{CVaR-penalised reward} --- replace CRRA with $R = \E[r] - \kappa\,\mathrm{CVaR}_\alpha[r]$ to explicitly penalise bear-regime tail risk. One-line change.
+  \item \alert{CVaR-penalised reward}: replace CRRA with $R = \E[r] - \kappa\,\mathrm{CVaR}_\alpha[r]$ to explicitly penalise bear-regime tail risk. One-line change.
 
-  \item \alert{Point-based value iteration (PBVI)} --- tighter $\alpha$-vector bound on the 1-D belief simplex. Cheap here.
+  \item \alert{Point-based value iteration (PBVI)}: tighter $\alpha$-vector bound on the 1-D belief simplex. Cheap here.
 
-  \item \alert{Off-policy MC + Double Q-learning} (Precup 2000 + Van Hasselt 2010) --- a model-free baseline that doesn't assume the QMDP transition matrix.
+  \item \alert{Off-policy MC + Double Q-learning} (Precup 2000 + Van Hasselt 2010): a model-free baseline that doesn't assume the QMDP transition matrix.
 \end{enumerate}
 \end{frame}
 
@@ -739,7 +739,7 @@ Three components separately reverse the negative finding. & Our gains net of tra
 
 \bigskip\small
 \begin{itemize}\setlength{\itemsep}{4pt}
-  \item 14 raw data CSVs ($\sim$745 KB) + 3 pickled HMMs --- \emph{all committed}
+  \item 14 raw data CSVs ($\sim$745 KB) + 3 pickled HMMs (all committed)
   \item 4 source modules (\texttt{hmm}, \texttt{mdp}, \texttt{qmdp}, \texttt{baselines})
   \item 12 experiment scripts ($00\ldots 12$, no 05)
   \item 11-page class report + 38-page extended technical report

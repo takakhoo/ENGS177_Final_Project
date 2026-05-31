@@ -32,6 +32,7 @@ from src.models.baselines import (  # noqa: E402
     backtest_from_weights,
 )
 from src.models.qmdp import update_belief, stationary_distribution  # noqa: E402
+from src.models.hmm import standardized_obs  # noqa: E402
 from src.utils.metrics import summarize  # noqa: E402
 
 DATA = REPO / "data" / "processed"
@@ -76,7 +77,7 @@ def main():
 
     asset_rets_full = df[["spy_ret", "agg_ret"]]
     obs_cols = ["vix", "term_spread"]
-    obs_full = df[obs_cols].values
+    obs_full = standardized_obs(df, obs_cols)  # match fit-time z-scored space
     belief_full = compute_belief(obs_full, model); belief_full.index = df.index
 
     map_state = belief_full.values.argmax(axis=1)
@@ -137,7 +138,7 @@ def main():
 
     # Pivot for heatmap: rows = strategy, columns = period, values = Sharpe
     sharpe_pivot = out.pivot(index="name", columns="period", values="sharpe")
-    # Sort by full-sample Sharpe for visual ordering — use period A as proxy if absent
+    # Sort by full-sample Sharpe for visual ordering, use period A as proxy if absent
     sharpe_pivot = sharpe_pivot.sort_values(sharpe_pivot.columns[-1], ascending=False)
 
     print("\n=== SUBPERIOD SHARPE TABLE ===")
@@ -153,7 +154,7 @@ def main():
                     ha="center", va="center", fontsize=10,
                     color="white" if abs(sharpe_pivot.values[i, j]) > 1.5 else "black")
     fig.colorbar(im, ax=ax, label="Sharpe ratio (annualised)")
-    ax.set_title("Subperiod Sharpe heatmap — robustness across 2003-2010, 2011-2019, 2020-2026")
+    ax.set_title("Subperiod Sharpe heatmap, robustness across 2003-2010, 2011-2019, 2020-2026")
     fig.tight_layout()
     fig.savefig(FIG / "subperiod_sharpe_heatmap.pdf")
     fig.savefig(FIG / "subperiod_sharpe_heatmap.png", dpi=150)

@@ -2,10 +2,10 @@
 the QMDP policy stops being 'all stocks always' and starts to defend in bears.
 
 Outputs:
-  results/gamma_sensitivity.csv         — metrics per (gamma, policy)
-  results/gamma_policy_table.csv        — pi*(s) per (gamma, regime)
-  figures/gamma_sensitivity_sharpe.pdf  — Sharpe vs gamma per policy
-  figures/gamma_equity_curves.pdf       — equity curves at gamma=2, 5, 10
+  results/gamma_sensitivity.csv        , metrics per (gamma, policy)
+  results/gamma_policy_table.csv       , pi*(s) per (gamma, regime)
+  figures/gamma_sensitivity_sharpe.pdf , Sharpe vs gamma per policy
+  figures/gamma_equity_curves.pdf      , equity curves at gamma=2, 5, 10
 """
 from __future__ import annotations
 
@@ -26,6 +26,7 @@ apply_style()
 
 from src.models.mdp import value_iteration, policy_iteration, q_function  # noqa: E402
 from src.models.qmdp import update_belief, stationary_distribution         # noqa: E402
+from src.models.hmm import standardized_obs                                # noqa: E402
 from src.utils.metrics import summarize                                    # noqa: E402
 from src.utils.utility import expected_utility_per_regime                  # noqa: E402
 
@@ -62,7 +63,7 @@ def load_data():
 
 def regime_samples(df, model, rng):
     obs_cols = [c for c in ["vix", "term_spread", "hy_oas"] if c in df.columns]
-    states = model.predict(df[obs_cols].values)
+    states = model.predict(standardized_obs(df, obs_cols))
     out = {}
     for k in range(model.n_components):
         mask = states == k
@@ -109,7 +110,7 @@ def main():
     rrs = regime_samples(df, model, rng)
     T_hmm = model.transmat_
     means = list(model.means_); covs = list(model.covars_)
-    obs = df[obs_cols].values
+    obs = standardized_obs(df, obs_cols)   # belief filter must match fit-time space
     asset_rets = df[["spy_ret", "agg_ret"]]
     A = ACTIONS.shape[0]
     P = np.repeat(T_hmm[np.newaxis, :, :], A, axis=0)
@@ -186,7 +187,7 @@ def main():
     ax.set_ylabel("Annualised Sharpe ratio (2003–2026)")
     ax.set_title(
         "QMDP Sharpe vs CRRA risk aversion\n"
-        "Crossover at $\\gamma\\approx 8$ — but $\\pi^\\ast(\\mathrm{bull})=\\pi^\\ast(\\mathrm{bear})$ at every $\\gamma$"
+        "Crossover at $\\gamma\\approx 8$, but $\\pi^\\ast(\\mathrm{bull})=\\pi^\\ast(\\mathrm{bear})$ at every $\\gamma$"
     )
     ax.legend(loc="lower right", fontsize=10)
     ax.set_ylim(0.3, 1.4)
@@ -226,7 +227,7 @@ def main():
     for ax in axes[:, 0]:
         ax.set_ylabel("Cumulative wealth (log scale)")
     fig.suptitle("Equity curves under varying CRRA risk aversion $\\gamma$ "
-                 "— higher $\\gamma$ shifts QMDP toward bonds across-the-board",
+                 ",  higher $\\gamma$ shifts QMDP toward bonds across-the-board",
                  fontsize=13, y=1.00)
     fig.tight_layout()
     fig.savefig(FIG / "gamma_equity_curves.pdf")

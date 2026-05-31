@@ -1,0 +1,916 @@
+\documentclass[11pt]{article}
+
+\usepackage[margin=1in,letterpaper]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{microtype}
+\usepackage{setspace}\setstretch{1.15}
+\setlength{\parskip}{0.55em}
+\setlength{\parindent}{0pt}
+
+\usepackage{amsmath,amssymb,amsfonts,bm,mathtools}
+\usepackage{booktabs,array,longtable}
+\usepackage{enumitem}
+\setlist{topsep=2pt,itemsep=2pt}
+\usepackage{xcolor}
+\usepackage[hidelinks]{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+
+\definecolor{cb}{HTML}{1f77b4}
+\definecolor{cr}{HTML}{d62728}
+\definecolor{cg}{HTML}{2ca02c}
+\definecolor{must}{HTML}{c0392b}
+
+\pagestyle{fancy}\fancyhf{}
+\fancyhead[L]{\small Regime-Switching Asset Allocation via a POMDP}
+\fancyhead[R]{\small Presentation script and study guide}
+\fancyfoot[C]{\thepage}
+\setlength{\headheight}{14pt}
+
+\titleformat{\section}[block]{\normalfont\Large\bfseries}{}{0pt}{}
+\titlespacing*{\section}{0pt}{16pt}{6pt}
+
+\titleformat{\subsection}[block]{\normalfont\large\bfseries\color{cb!70!black}}{}{0pt}{}
+\titlespacing*{\subsection}{0pt}{12pt}{4pt}
+
+\titleformat{\subsubsection}[block]{\normalfont\normalsize\bfseries}{}{0pt}{}
+\titlespacing*{\subsubsection}{0pt}{8pt}{3pt}
+
+% A simple bold-red MUST-SAY marker for the absolute core of each slide
+\newcommand{\mustsay}[1]{\textcolor{must}{\textbf{[MUST SAY]}}\ #1}
+\newcommand{\bel}{\mathbf{b}}
+
+\title{
+  \LARGE\textbf{Speaker Script \& Study Guide}\\[6pt]
+  \large Regime-Switching Asset Allocation via a POMDP\\[2pt]
+  \normalsize\itshape Slide-by-slide narration for the 15-frame, 10-minute talk
+}
+\author{Dario Blanco Morales \quad Even Hogberget \quad Kyle David Ledda-Lewaren \quad Taka Khoo}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+\thispagestyle{empty}
+
+\section*{What changed in this revision}
+
+\textbf{Slide 5 (``HMM cleanly recovers known crises'') was removed} from both the deck and this script. Dario flagged that the cached figure shows the bear-probability sitting at zero during NBER recessions, a regime-label bug in the underlying HMM pickle, not a presentation bug, but enough that we can't show the figure on stage with confidence. We will fix the figure for the written report after the talk. The 15-frame deck still tells the full story: the cohort visual on Slide 10 (formerly 11) carries the ``HMM signal is informative'' message via a different figure.
+
+The deck now numbers 1--15. All cross-references in this script use the new numbering. The total content time drops from $\sim$10:30 to $\sim$9:30, which is comfortable for the 10-minute slot.
+
+\section*{What this document is}
+
+A study document. Each of the 15 slides gets a chapter with everything you need to deliver that slide and answer questions on it. Read your own slides at least twice before the talk; skim your teammates' once so you can back them up if they freeze.
+
+Each slide chapter has the same structure, but with one new addition this revision:
+
+\begin{itemize}
+  \item \textbf{MUST-SAY marker} (red). Inside the ``Say'' section, sentences tagged with \textcolor{must}{\textbf{[MUST SAY]}} are the irreducible core. If you have to cut for time, cut the surrounding context, never the MUST-SAY sentences. They carry the argument. Everything else is colour.
+  \item All other sections (Why this slide matters, Background concepts, Analogy, Key numbers, Where to read more, Likely questions, Say, Transition) are unchanged in format.
+\end{itemize}
+
+\section*{Speaker assignments (after removing Slide 5)}
+
+We hand off in contiguous blocks. Three transitions total, no back-and-forth.
+
+\renewcommand{\arraystretch}{1.25}
+\begin{center}
+\begin{tabular}{l l l p{6.5cm}}
+\toprule
+\textbf{Presenter} & \textbf{Slides} & \textbf{Time} & \textbf{What you cover} \\
+\midrule
+Even  & 1, 2, 3           & $\sim$2:00 & Title, the 2022 hook, the doctor analogy. Open the talk; set up the POMDP framing. \\
+Dario & 4, 5              & $\sim$1:50 & End-to-end pipeline, QMDP rule with worked example. The ``methods'' block. \\
+Kyle  & 6, 7, 8, 9        & $\sim$3:30 & Twelve-strategy horse race, equity-curves figure, why QMDP collapsed ($\gamma$ table), Unlock 1 cohort table. The ``results'' block. \\
+Taka  & 10, 11, 12, 13, 14, 15 & $\sim$3:00 & Cohort visual, Unlock 2 walk-forward, subperiod heatmap, honest verdict, three extensions, Thank you. The ``diagnostics + verdict'' block. \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\textbf{Hand-off sequence.} Even~$\to$~Dario after Slide 3; Dario~$\to$~Kyle after Slide 5; Kyle~$\to$~Taka after Slide 9.
+
+\section*{Taka, special note for you}
+
+You go last and you also field the bulk of the Q\&A because your block contains the verdict (Slide 13). Three things to keep in mind:
+
+\begin{enumerate}
+  \item \textbf{The verdict slide is the one the audience will remember.} Land each row of the green/red table slowly. Don't oversell, don't undersell. Use the exact framing in the MUST-SAY lines on that chapter.
+  \item \textbf{Be ready to defend the negative result.} The single most common pushback will be ``isn't this a weak result?'', the prepared answer is in the Q\&A appendix and in the Slide 13 chapter. Read both before the talk.
+  \item \textbf{Know which teammate has the answer to which type of question.} Even has the doctor framing; Dario has the pipeline and QMDP formula; Kyle has the horse race numbers and the $\gamma$ collapse; you have the verdict, the unlocks, and the framing. If a question crosses, jump in.
+\end{enumerate}
+
+\section*{How to study this document}
+
+\textbf{Your own slides.} Read the whole chapter. Then read the ``Say'' section out loud three times. Read it again with the MUST-SAY lines bolded in your head, if you can deliver only those sentences and nothing else, the slide still works.
+
+\textbf{Your teammates' slides.} Read just the ``Why this slide matters'' and ``Key numbers'' subsections. That's enough to back up the speaker if they freeze or if a question crosses slides.
+
+\textbf{The Q\&A appendix.} Read it once the night before. Don't memorise; absorb the shape.
+
+\bigskip\hrule
+
+\tableofcontents
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 1, Title}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Even. \quad\textbf{Target time:} 10 seconds. \quad\textbf{Difficulty:} 1 / 5.
+
+\textbf{On screen.} Project title, all four authors, ENGS 177, Thayer School, May 2026.
+
+\subsection*{Why this slide matters}
+
+Sets the tone. Calm, brief, confident.
+
+\subsection*{Say}
+
+``Good morning. We're going to walk you through our term project on \emph{regime-switching asset allocation via a POMDP}. I'm Even; my teammates Dario, Kyle, and Taka will take you through their pieces. The talk is ten minutes.
+
+\mustsay{Let's begin with a question.''}
+
+\subsection*{Transition}
+
+One-second pause. Click to advance to Slide 2. You keep speaking.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 2, The 2022 hook}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Even. \quad\textbf{Target time:} 40 seconds. \quad\textbf{Difficulty:} 2 / 5.
+
+\textbf{On screen.} The two-line question, a red box with \textbf{17\%}, two bullets on why static allocation breaks, the research question.
+
+\subsection*{Why this slide matters}
+
+Motivation. Anchors the talk in a concrete recent failure of the textbook default.
+
+\subsection*{Background concepts}
+
+\textbf{60/40.} 60\% stocks, 40\% bonds. Textbook default. Promise: bonds rise when stocks fall (Fed cuts rates, money flows to safety), so the two cancel.
+
+\textbf{Why it broke in 2022.} Inflation came back, Fed hiked rates fast. High rates hurt stocks (lower discounted earnings) AND bond prices (new bonds become more attractive). Both legs fell together.
+
+\subsection*{Key numbers}
+
+\textbf{17\%}, the single most important anchor in the whole talk. Land slowly.
+
+\subsection*{Likely questions}
+
+\textbf{``Was 2022 really that bad?''}\quad That's the point. Stress tests reveal failures. 2022 was the test 60/40 was sold as designed for; it failed.
+
+\textbf{``Why not 70/30?''}\quad Any static mix has the same problem when stocks and bonds correlate. The fix isn't a different ratio; it's a rule that responds to conditions.
+
+\subsection*{Say}
+
+``Have you ever wondered why the so-called safe 60/40 portfolio sometimes loses money exactly when you most need it not to?
+
+\mustsay{In 2022, the textbook 60/40 stock-bond portfolio lost about \textbf{17 percent} as stocks \emph{and} bonds fell together. That's exactly the failure mode the 60/40 mix is sold as protecting against.}
+
+The deeper reason this happens: static allocation assumes returns are stable over time. Reality breaks that in two specific ways. Calm decades get punctuated by short crises. And in those crises stocks and bonds sell off \emph{together}, the diversification you need most erodes exactly then.
+
+\mustsay{So our research question is: \emph{can a fully decision-theoretic regime overlay, not a heuristic, an actual optimisation, beat the static 60/40 out-of-sample, after realistic transaction costs?}''}
+
+\subsection*{Transition}
+
+Pause one beat. Click to advance.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 3, The doctor analogy}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Even. \quad\textbf{Target time:} 60 seconds. \quad\textbf{Difficulty:} 2 / 5.
+
+\textbf{On screen.} Left column: four bullets describing the doctor. Right column: three rounded boxes (Hidden regime, Symptoms, Treatment) connected by arrows. Below: ``Tree, MDP, ID all fail here. POMDP is the minimum tool.''
+
+\subsection*{Why this slide matters}
+
+This is the conceptual anchor. The doctor analogy carries through the rest of the talk. Done well, every later slide feels obvious. Done poorly, the audience is confused for the next 9 minutes. Be vivid.
+
+\subsection*{Background concepts}
+
+\textbf{POMDP.} A model for sequential decisions when the state is hidden. Six pieces: hidden state, noisy observations, actions, transitions, rewards, discount factor. The decision-maker maintains a \emph{belief} over the state and picks actions to maximise expected discounted reward.
+
+\textbf{Why not the alternatives.} Decision tree: explodes with horizon. Influence diagram: doesn't repeat naturally. Fully-observable MDP: requires you to see the state, but you can't. POMDP is the minimum.
+
+\textbf{How the analogy maps.} Doctor = decision-maker. Hidden disease state = latent regime. Visible symptoms = observations (VIX, term spread, stress indices). Treatment = portfolio weight. Patient outcome = reward.
+
+\subsection*{The analogy}
+
+The doctor is the spine of the talk. Where it shows up:
+
+\begin{itemize}
+  \item \textbf{Introduced here} (Slide 3) by Even.
+  \item \textbf{Used again on Slide 5} (Dario, QMDP rule): ``QMDP is the doctor's decision rule once they have a belief.''
+  \item \textbf{Used again on Slide 9} (Kyle, Unlock 1): ``more thermometers, better diagnosis'' explicitly extends the doctor.
+\end{itemize}
+
+\subsection*{Likely questions}
+
+\textbf{``Why is the regime hidden?''}\quad There's no fundamental measurable ``regime.'' NBER dates U.S.\ recessions \emph{retrospectively}, months after the fact. We can't peek; we can only infer from visible symptoms.
+
+\textbf{``How many regimes are there?''}\quad We tested $K \in \{2, 3, 4\}$. BIC picks $K = 2$ for our 271 months.
+
+\subsection*{Say}
+
+``Here's the right way to think about this. \emph{You are a doctor. Your patient is the market.}
+
+Every month, at the check-up, you have to prescribe a treatment, which here is the portfolio weight. The patient is either healthy, we'll call that the \emph{bull} regime, or sick, the \emph{bear} regime. \mustsay{But you can't examine the patient directly. All you see are symptoms: the VIX, the Treasury term spread, financial-stress indices.}
+
+Different treatments work better in different states. Stocks are great in bull regimes; bonds are protective in bear regimes. So the doctor's job has three steps: read the symptoms, infer the hidden state, prescribe accordingly.
+
+\mustsay{That, in one sentence, is a \emph{POMDP}, a \emph{partially observable Markov decision process}. The state is hidden, the observations are noisy, and the decisions repeat. POMDP is the minimum tool that captures the problem honestly.}
+
+I'll now hand off to Dario, who will walk you through how we actually built this.''
+
+\subsection*{Transition}
+
+Step left, yield to Dario. Dario advances to Slide 4.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 4, The end-to-end pipeline}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Dario. \quad\textbf{Target time:} 55 seconds. \quad\textbf{Difficulty:} 4 / 5.
+
+\textbf{On screen.} An 8-box flow diagram on two rows. Top: FRED+Yahoo $\to$ Monthly panel $\to$ HMM $\to$ MDP $\to$ $Q^*(s, a)$. Bottom: Bayes filter $\to$ QMDP $\to$ Backtest. Three bullets below.
+
+\subsection*{Why this slide matters}
+
+The audience needs a mental picture of how the system works. Without it, every later slide hangs in the air. Take it slow. Pause between the two phases.
+
+\subsection*{Background concepts}
+
+\textbf{FRED + Yahoo.} FRED = Federal Reserve Economic Data, the St.\ Louis Fed's free public data warehouse. We pull macro series (VIX, term spread, stress indices) from FRED and asset prices (SPY, AGG) from Yahoo.
+
+\textbf{Monthly panel.} 272 rows (Oct 2003 to Apr 2026), 13 columns. All committed to the repo.
+
+\textbf{HMM.} Gaussian hidden Markov model, fit by Baum-Welch (EM). Outputs: transition matrix $T$, per-regime emission means $\mu_s$, per-regime covariances $\Sigma_s$.
+
+\textbf{MDP.} Fully-observable Markov decision process. State = regime; actions = portfolio weights; reward = expected CRRA utility minus tx cost. Solved by VI and PI.
+
+\textbf{$Q^*(s, a)$.} Optimal action-value table. Small: 2 regimes $\times$ 6 actions.
+
+\textbf{Bayes filter.} Updates the belief over regimes given each new observation. Predict then update.
+
+\textbf{QMDP.} Picks action that maximises belief-weighted $Q^*$. Slide 5.
+
+\textbf{Backtest.} Apply chosen weights to next month's actual returns, subtract tx cost, update wealth, step forward. 271 times.
+
+\textbf{VI = PI to $2.6\times 10^{-6}$.} Sanity check: both solvers agree to that precision.
+
+\subsection*{Likely questions}
+
+\textbf{``Why not refit the HMM in walk-forward?''}\quad The headline doesn't, and that's a methodology choice we test on Slide 11 (Unlock 2). It lifts Sharpe from 0.81 to 1.08.
+
+\textbf{``Why both VI and PI?''}\quad Cross-check that both implementations are correct. PI is faster (2 iterations vs.\ 125), but agreement is what matters.
+
+\textbf{``Why 5 bps transaction cost?''}\quad Institutional-flow level. Retail would be 10--25 bps. We didn't include a full cost sweep.
+
+\textbf{``Why $\lambda = 0.95$?''}\quad Effective horizon $\approx 20$ months, matches typical macro-regime duration.
+
+\subsection*{Say}
+
+``Thanks Even. Here's the whole system in one picture. There are two paths through it.
+
+\mustsay{The \emph{top row} is what we do \emph{once}, offline. We pull fourteen public data series from FRED and Yahoo Finance, align them into a monthly panel of 272 rows covering 2003 through 2026. We fit a two-state Gaussian HMM by Baum-Welch, which gives us the transition matrix and the per-regime emission means and covariances. Then we solve the underlying \emph{fully-observable} MDP twice, once with value iteration, once with policy iteration, and they agree to 2.6 times ten-to-the-minus-six. That's our sanity check. The output is a $Q^*$ table.}
+
+\mustsay{The \emph{bottom row} is what we do \emph{every month}. We take this month's observations. We update the belief using a Bayesian filter. We plug the belief into the QMDP rule to pick weights. We realise next month's return, subtract the transaction cost, step forward.}
+
+We do this 271 times. Walk-forward, monthly rebalancing, 5 basis-points cost.''
+
+\subsection*{Transition}
+
+Pause. Click to advance. You stay on for Slide 5.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 5, The QMDP rule, with a worked example}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Dario. \quad\textbf{Target time:} 55 seconds. \quad\textbf{Difficulty:} 5 / 5.
+
+\textbf{Note for Dario:} this is the only formula in the talk. Read the ``Background concepts'' twice. Rehearse the dot-product walkthrough explicitly. The MUST-SAY lines below are the irreducible core, everything else can be skipped if time gets tight.
+
+\textbf{On screen.} The QMDP formula. A four-row $Q^*$ table at $\gamma = 8$ with the 40/60 row highlighted. A caveat at the bottom about $\gamma = 2$.
+
+\subsection*{Why this slide matters}
+
+This is the only formula slide. If the audience leaves understanding ``QMDP = belief-weighted average of $Q^*$ values, pick the max,'' that's enough. The slide also plants the seed for the $\gamma = 2$ collapse that Kyle explains on Slide 8.
+
+\subsection*{Background concepts}
+
+\textbf{QMDP.} The simplest approximate POMDP solver. Equivalent to: ``act as if the doctor secretly whispered the patient's state to you with probabilities $\mathbf{b}$, then pick the best action under that whisper.''
+
+\textbf{CRRA $\gamma$.} Risk aversion parameter. $\gamma = 2$ is the canonical baseline in consumption-asset-pricing literature. The $\gamma = 8$ on this slide is unrealistically high, it's chosen because it's the lowest $\gamma$ at which the underlying MDP's policy actually differs between regimes, so it makes the cleanest example.
+
+\textbf{The dot product.} $\bel = (0.07, 0.93)$ for ``93\% bear.'' For action 40/60: $0.07 \cdot 0.20 + 0.93 \cdot 0.22 = 0.014 + 0.205 = 0.219$. The 40/60 row wins because the belief weights the bear column heavily.
+
+\textbf{Why the headline collapses at $\gamma = 2$.} The $Q^*$ table at $\gamma = 2$ has the ``100/0'' column dominate both regimes. So QMDP always picks 100/0 regardless of belief. That's the failure Kyle diagnoses on Slide 8.
+
+\subsection*{Likely questions}
+
+\textbf{``Why $\gamma = 8$ if your headline is $\gamma = 2$?''}\quad At $\gamma = 2$ the policy collapses (Slide 8). I'm using $\gamma = 8$ so you see a clean worked example where the regime structure actually matters.
+
+\textbf{``Where do the $Q^*$ numbers come from?''}\quad Value iteration on the underlying MDP, with the CRRA-utility reward function over Monte-Carlo-simulated next-month returns under each regime.
+
+\textbf{``How does QMDP differ from POMDP-optimal?''}\quad QMDP is exact when the belief is concentrated on one state, an approximation otherwise. Its main weakness is it can't motivate information-gathering, doesn't bind here because no action affects observability.
+
+\subsection*{Say}
+
+``So how does QMDP actually pick an action? Here's the rule, and here's a concrete example.
+
+Going back to the doctor analogy: imagine the patient secretly told you the probability they're in each state. Then you'd pick the treatment that maximises your expected outcome, weighted by that whispered probability. \mustsay{That's exactly QMDP. The formula in the box: pick the action that maximises $\sum_s b(s) Q^*(s, a)$.}
+
+Walk through the example. Suppose we've just observed a VIX of 35, elevated. The Bayesian filter shifts the belief to about 93 percent bear. At $\gamma = 8$, the $Q^*$ table is what you see on screen.
+
+\mustsay{Read down the rightmost column. The 40/60 mix scores 0.219, the highest. QMDP picks 40/60, the bear-leaning belief steered the portfolio toward bonds. Exactly what a regime-aware allocator should do.}
+
+\mustsay{But here's the important catch. At our \emph{headline} risk aversion, $\gamma = 2$, not 8, the table looks different. The `100/0' column dominates both regimes. So QMDP always picks 100 percent stocks regardless of belief. Hold that thought, Kyle is about to show you what happens when we let that loose against the rest of the field.''}
+
+\subsection*{Transition}
+
+Click to advance. Step right, yield to Kyle. Kyle takes Slide 6.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 6, The twelve-strategy horse race}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Kyle. \quad\textbf{Target time:} 80 seconds. \quad\textbf{Difficulty:} 5 / 5.
+
+\textbf{Note for Kyle:} this is the headline slide of the talk. The three-sentence structure is the single most important thing in the whole presentation. Don't recite the row order; tell the story. Land each of the three sentences slowly.
+
+\textbf{On screen.} Full 12-row table. Faber green at the top; QMDP red at the bottom. Columns: CAGR, Vol, Sharpe, Sortino, Max DD, Calmar.
+
+\subsection*{Why this slide matters}
+
+The headline of the entire project. If the audience remembers one slide, this is it.
+
+\subsection*{Background concepts}
+
+\textbf{The 11 baselines.} You don't need to recite them, but know the three groups: naive heuristics (60/40, equal weight, inverse vol), classical portfolio theory (risk parity, MV+LW, vol-target), tactical/regime-aware (Faber, TS momentum, myopic, HMM-MV, BL+HMM).
+
+\textbf{Faber's rule.} Hold SPY if above its 10-month SMA; else bonds. Popularised by Mebane Faber 2007.
+
+\textbf{HMM-MV.} Belief-weighted expected returns and covariances $\to$ Markowitz. Uses HMM signal but \emph{not} QMDP projection.
+
+\textbf{BL+HMM.} Equilibrium prior + HMM-derived views $\to$ posterior Markowitz. Also uses HMM signal without QMDP.
+
+\textbf{Metrics.} CAGR = compound annual growth rate. Vol = annualised standard deviation. Sharpe = excess-return/vol (higher = better; 1.0 good, 1.5 great). Sortino = downside-only Sharpe. Max DD = worst peak-to-trough loss. Calmar = CAGR/MaxDD.
+
+\subsection*{Key numbers}
+
+The three to land slowly:
+\begin{itemize}
+  \item \textbf{Faber: Sharpe 1.68, MaxDD $-13.5\%$.} The winner.
+  \item \textbf{QMDP $\gamma{=}2$: Sharpe 0.73, MaxDD $-53\%$.} Last on Sharpe, deepest drawdown.
+  \item \textbf{HMM-MV: 1.08; BL+HMM: 0.94.} Both beat static 60/40 (0.81) using the same HMM signal without QMDP.
+\end{itemize}
+
+\subsection*{Likely questions}
+
+\textbf{``Are 12 strategies enough?''}\quad They span every published category. Missing: ML baselines, which need their own training-set hygiene.
+
+\textbf{``Why is Faber so good?''}\quad Trend-following exploits return persistence (a stylised fact across centuries). Got out of stocks before the worst of 2008.
+
+\textbf{``Why does QMDP have competitive CAGR but worst Sharpe?''}\quad At $\gamma = 2$ it holds 100\% stocks always. High return + high vol + deep 2008 drawdown = ok CAGR, terrible Sharpe.
+
+\subsection*{Say}
+
+``Thanks Dario. This is the headline of the entire project.
+
+We benchmarked our QMDP not just against the static 60/40 but against \emph{eleven} other strategies, the whole academic and practitioner consensus for tactical asset allocation. Sorted by Sharpe ratio.
+
+Three sentences tell the entire story.
+
+\mustsay{\emph{One.} The winner is Faber's 10-month moving-average rule, with a Sharpe of \textbf{1.68}. Highest Sortino, highest Calmar, smallest drawdown of any leader. A simple trend rule, no regime model, no Bayesian filter, no MDP.}
+
+\mustsay{\emph{Two.} Our QMDP at $\gamma = 2$ finishes dead last on Sharpe, 0.73, with the deepest drawdown of any strategy in the comparison, \textbf{negative 53 percent}. At $\gamma = 2$ it holds 100 percent stocks the entire time, including through 2008.}
+
+\mustsay{\emph{Three}, and this is the diagnostic that matters most, two of the baselines also use the HMM signal but don't go through the QMDP projection: HMM-conditional Markowitz at 1.08, Black-Litterman with HMM views at 0.94. Both \emph{beat} the static 60/40. Same HMM signal. So the HMM is informative, it's the QMDP projection at $\gamma = 2$ that destroys it.''}
+
+\subsection*{Transition}
+
+Let the table sit one beat. Click to advance. You stay on for Slide 7.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 7, The equity-curves figure}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Kyle. \quad\textbf{Target time:} 30 seconds. \quad\textbf{Difficulty:} 2 / 5.
+
+\textbf{On screen.} Equity curves figure: \$1 invested 2003-10, log scale, 12 lines.
+
+\subsection*{Why this slide matters}
+
+Visual companion to the horse race. Fast slide. Don't linger.
+
+\subsection*{Background concepts}
+
+\textbf{Log scale.} Each gridline is $10\times$. Slope = compound growth rate. Depth of trench after a peak = drawdown at that moment.
+
+\textbf{Where Faber sits during 2008.} Roughly flat, bailed out of stocks into bonds when SPY broke below its 10-month SMA in early 2008.
+
+\textbf{Where QMDP sits during 2008.} Follows SPY straight down, $-53\%$ from peak.
+
+\subsection*{Say}
+
+``Here's the same story as a picture. \$1 invested in October 2003. Log scale, so each gridline is a $10\times$.
+
+\mustsay{Faber, the yellow line at the top, ends near \$30. The static 60/40 ends near \$5. QMDP, the red line, ends near \$8, not terrible on absolute wealth, but look at the trench in 2008--2009. That's the negative-53-percent drawdown.}
+
+The lesson in one sentence: Faber doesn't try to predict the next wave. It surfs the one that's already breaking.''
+
+\subsection*{Transition}
+
+Click to advance. You stay on for Slide 8.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 8, Why QMDP collapsed}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Kyle. \quad\textbf{Target time:} 50 seconds. \quad\textbf{Difficulty:} 4 / 5.
+
+\textbf{On screen.} Seven-column table of optimal MDP action by regime, for $\gamma \in \{1, 2, 3, 5, 8, 15, 20\}$. Identical in both rows of every column. Red callout box restates the punchline.
+
+\subsection*{Why this slide matters}
+
+This is the diagnostic that explains the headline. Without it, the audience leaves thinking ``QMDP doesn't work.'' With it, they understand the failure is structural to low $\gamma$, not a flaw in the HMM or QMDP itself.
+
+\subsection*{Background concepts}
+
+\textbf{What CRRA $\gamma$ does.} Tunes how much you hate losses relative to liking gains. Empirical estimates cluster around $\gamma = 2$.
+
+\textbf{What the table says.} For every $\gamma$, bull and bear regimes pick the \emph{same} action. The regime label is inert. The only thing $\gamma$ controls is the across-the-board allocation.
+
+\textbf{Vol-reduction effect, not regime tilting.} As $\gamma$ rises, the policy shifts bondward in both regimes simultaneously. Lower equity $\Rightarrow$ lower vol $\Rightarrow$ higher Sharpe. That's a second-moment effect, not regime-aware.
+
+\subsection*{The analogy}
+
+The \emph{low-risk-aversion gambler}. Use this:
+
+\begin{quote}
+``A gambler with low risk aversion bets the same way regardless of suspicion. Even 93\% sure it's the bad deck, they still play the high-EV hand. Only a sufficiently risk-averse gambler lets suspicion shift the bet.''
+\end{quote}
+
+This analogy appears only on this slide. Use it deliberately.
+
+\subsection*{Likely questions}
+
+\textbf{``Why not just raise $\gamma$?''}\quad At $\gamma = 8$ QMDP crosses 60/40 on Sharpe, but the policy is still the same in bull and bear (both 40/60). The Sharpe gain is a vol-reduction effect, not regime tilting.
+
+\textbf{``Why is $\gamma = 2$ the headline?''}\quad Canonical baseline in the literature. The negative result at the canonical value is more diagnostic than at a tuned value.
+
+\subsection*{Say}
+
+``This table tells you the whole diagnostic. Across the top, we vary CRRA risk-aversion $\gamma$ from 1 to 20. In each column, two rows: optimal action in bull regime, optimal action in bear regime.
+
+\mustsay{Look down each column. They are \emph{identical}. At $\gamma = 2$, both regimes pick 100/0. At $\gamma = 8$, both pick 40/60. The regime label \emph{never moves the policy.}}
+
+What $\gamma$ \emph{does} change is the across-the-board allocation. Higher $\gamma$, more bonds in both regimes. That's a vol-reduction effect, not regime tilting.
+
+The clean way to explain this: \mustsay{a low-risk-aversion gambler bets the same way regardless of suspicion. Even 93 percent suspicious it's the bad deck, they still play the high-EV hand. Only a sufficiently risk-averse gambler lets suspicion shift the bet.}
+
+So the question becomes: is there a lever, other than $\gamma$, that would make the regime label actually move the policy?''
+
+\subsection*{Transition}
+
+Click to advance. You stay on for Slide 9.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 9, Unlock 1: richer observations}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Kyle. \quad\textbf{Target time:} 55 seconds. \quad\textbf{Difficulty:} 3 / 5.
+
+\textbf{On screen.} Five-row cohort table. Row 3 (+NFCI, +STLFSI4) highlighted green: bull 100/0, bear 0/100 at the same $\gamma = 2$. Green callout below.
+
+\subsection*{Why this slide matters}
+
+First reversibility experiment. ``Change the observations, the policy flips. Same $\gamma$.''
+
+\subsection*{Background concepts}
+
+\textbf{NFCI.} Chicago Fed National Financial Conditions Index. Weekly composite of 105 stress indicators.
+
+\textbf{STLFSI4.} St.\ Louis Fed Financial Stress Index. Composite of 18 indicators with different weighting from NFCI. Cross-validates.
+
+\textbf{Why VIX + spread isn't enough.} Both measure equity-market fear. Miss credit and broader financial-system stress. 2022 inflation: VIX moderate, NFCI/STLFSI4 spiked.
+
+\textbf{The five cohorts.} 1: baseline (the collapse). 2: +T10Y2Y (no help, same axis). 3: +NFCI, +STLFSI4 (full flip). 4: +UMCSENT, +ICSA (robust to feature substitution). 5: kitchen sink (over-fits).
+
+\subsection*{The analogy}
+
+The \emph{thermometers}. Use this explicitly:
+
+\begin{quote}
+``More thermometers, better diagnosis. VIX and the term spread are both measuring the same axis. NFCI and STLFSI4 measure other things: shadow banking, money markets, bond-market stress. Independent signals.''
+\end{quote}
+
+\subsection*{Likely questions}
+
+\textbf{``Why not always use the kitchen sink?''}\quad Over-fits. With 271 months and 8 channels, the HMM identifies regimes that the data can't support. BIC penalises it.
+
+\textbf{``Why didn't the original proposal use NFCI?''}\quad The original used HY OAS but FRED truncates that to 3 years. NFCI and STLFSI4 substitute.
+
+\subsection*{Say}
+
+``So if it's not $\gamma$, what \emph{is} the lever? We asked: what if we gave the HMM \emph{better eyes on the world}? Same $\gamma = 2$ as the headline. We just change which observations feed the HMM.
+
+Cohort 1: VIX plus the 10-year minus 3-month spread. Bull and bear both 100/0. The collapse.
+
+Cohort 2: add another yield-curve channel. No change.
+
+\mustsay{Cohort 3, the green row, adds two financial-stress indices: NFCI and STLFSI4. Now bull is still 100/0, but bear is \textbf{0/100}, a full flip. All bonds in the bear regime. \emph{Same} $\gamma = 2$.}
+
+\mustsay{The clean explanation: \emph{more thermometers, better diagnosis}. VIX and the term spread measure the same axis. NFCI and STLFSI4 measure independent things, shadow banking, money markets, bond-market stress. With independent signals, the HMM identifies a bear regime where bonds genuinely beat stocks. The headline collapse is an observation-channel problem, not a fundamental QMDP problem.''}
+
+\subsection*{Transition}
+
+Click to advance. Step right, yield to Taka. Taka takes Slide 10.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 10, Visual confirmation of Unlock 1}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Taka. \quad\textbf{Target time:} 25 seconds. \quad\textbf{Difficulty:} 2 / 5.
+
+\textbf{On screen.} Three-panel figure: $P(\text{bear})$ over time under three cohorts.
+
+\subsection*{Why this slide matters}
+
+Visual confirmation of the cohort table. The table shows the policy flips; this figure shows the signal also gets cleaner. Two pieces of evidence pointing the same way.
+
+This is also your first slide in the closing block. Open clean, set the tone for the rest.
+
+\subsection*{Background concepts}
+
+\textbf{$P(\text{bear})$.} Smoothed posterior probability of bear regime per month, 0 to 1.
+
+\textbf{What to look for.} Top: noisy, false alarms in calm periods. Middle: sharp spikes lined up with NBER bars + 2022. Bottom: choppy from over-fit.
+
+\subsection*{Say}
+
+``Thanks Kyle. Here's the picture that confirms what Kyle just described. Each row is one cohort's posterior probability of bear regime over time.
+
+\mustsay{Top: cohort 1, baseline. Noisy. False alarms in calm periods. Middle: cohort 3, the one that flipped the policy. Sharp high-confidence bear spikes that bracket every NBER recession and catch 2022. Bottom: kitchen sink, over-fits.}
+
+So the cohort table told us the \emph{policy} flips. This figure tells us the \emph{signal} also gets cleaner. Two independent pieces of evidence pointing the same direction.''
+
+\subsection*{Transition}
+
+Click to advance. You stay on for Slide 11.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 11, Unlock 2: walk-forward refit}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Taka. \quad\textbf{Target time:} 55 seconds. \quad\textbf{Difficulty:} 3 / 5.
+
+\textbf{On screen.} Five-row table of refit cadences. Expanding-window row in green: Sharpe 1.08, MaxDD $-16.5\%$, Calmar 0.60.
+
+\subsection*{Why this slide matters}
+
+The second reversibility experiment. ``Same headline observations, same $\gamma$, one methodological change, walk-forward refit, and the verdict reverses.''
+
+\subsection*{Background concepts}
+
+\textbf{Walk-forward.} Periodically refit the model as new data arrives. Avoids look-ahead bias; lets the model track parameter drift.
+
+\textbf{Four cadences tested.} Fixed (headline, never refit). Annual on rolling 5-year window. Quarterly. Expanding window (refit every year using \emph{all} past data).
+
+\textbf{Why expanding window wins.} Regime parameters drift slowly. Newer data helps; older data still relevant. Rolling window throws out useful information; expanding doesn't.
+
+\textbf{Nystrup et al.\ 2018.} \emph{Dynamic Portfolio Optimization across Hidden Market Regimes}, Quantitative Finance. Specifically warns that regime-switching models need periodic refit. We followed their protocol.
+
+\subsection*{The analogy}
+
+The \emph{casino re-read}:
+
+\begin{quote}
+``A fixed HMM is like a player who learned the casino's edges 20 years ago and never updated. The casino has changed, new dealers, new decks, different switching rates. Walk-forward refit is just re-reading the casino's recent hands.''
+\end{quote}
+
+\subsection*{Likely questions}
+
+\textbf{``Does rolling vs expanding really matter that much?''}\quad Yes. Rolling 5-year throws out 2003--2014 once we move past 2019; those years include the GFC, prime training material. Expanding keeps everything.
+
+\textbf{``Look-ahead bias?''}\quad No. At each refit, the HMM uses only data observed up to that point.
+
+\textbf{``Does cohort 3 combine with walk-forward?''}\quad We didn't run the joint experiment as the headline because we wanted each unlock isolated. It would be the next thing to run.
+
+\subsection*{Say}
+
+``Second unlock, a completely different lever, again at the same $\gamma = 2$.
+
+The headline backtest fits the HMM once on the first 11 years and freezes it. Following Nystrup et al.\ 2018, we asked: what if we keep retraining?
+
+Four cadences. Fixed. Annual refit on a rolling 5-year window. Quarterly. And \emph{expanding window}, refit every year using all data observed so far.
+
+\mustsay{The expanding-window row is green. Sharpe lifts from 0.81, the static benchmark, to \textbf{1.08}. A 33 percent improvement. Max drawdown cuts from minus 34 percent to \textbf{minus 16-and-a-half} percent, more than halves. Calmar nearly triples.}
+
+\mustsay{Back to the casino analogy: a fixed HMM is like a player who learned the casino's edges 20 years ago and never updated. Walk-forward refit is just re-reading the casino's recent hands. A single methodological choice flipped the verdict.''}
+
+\subsection*{Transition}
+
+Click to advance. You stay on for Slide 12.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 12, Subperiod robustness}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Taka. \quad\textbf{Target time:} 40 seconds. \quad\textbf{Difficulty:} 3 / 5.
+
+\textbf{On screen.} Sharpe heatmap: 12 strategies $\times$ 3 subperiods. Faber bright green; QMDP red, especially Period A (0.33).
+
+\subsection*{Why this slide matters}
+
+\textbf{The most damning piece of evidence in the entire project.} QMDP at $\gamma = 2$ fails worst in Period A, exactly where regime-awareness should be most valuable, while two other HMM-aware models succeed in the same period. Isolates the failure precisely to the QMDP projection step.
+
+\subsection*{Background concepts}
+
+\textbf{Three subperiods.} A: 2003--2010 (GFC era, where regime-awareness should help most). B: 2011--2019 (post-GFC ZIRP calm). C: 2020--2026 (COVID + inflation).
+
+\textbf{Why Period A is the diagnostic.} If QMDP failed uniformly, you'd argue ``bad model.'' But it specifically fails where regime-awareness should help, while HMM-MV and BL+HMM (using the same HMM) get Sharpe 1.03--1.25 in the same period.
+
+\subsection*{Likely questions}
+
+\textbf{``Did you cherry-pick the period cuts?''}\quad 2010 = end of GFC recovery; 2019 = end of ZIRP. Standard boundaries.
+
+\textbf{``Why does Faber dominate Period B?''}\quad Long bull market for both stocks and bonds. Faber stayed long the whole time.
+
+\textbf{``Could QMDP win some other period?''}\quad No, it's at the bottom of every column.
+
+\subsection*{Say}
+
+``One last check before the verdict. Does the ranking hold across different historical subperiods, or did we cherry-pick a sample?
+
+Three subperiods. A: 2003--2010, the GFC era. B: 2011--2019, the post-GFC zero-rate calm. C: 2020--2026, COVID and inflation.
+
+Two takeaways.
+
+\mustsay{One. Faber dominates every column. The trend rule works in the GFC, in the calm, and in the recent crises. Not a one-period fluke.}
+
+\mustsay{Two, and this is the most damning piece of evidence in the whole project, QMDP's worst column is Period A, the GFC era. Sharpe \textbf{0.33}. Exactly the period where a regime-aware model should be \emph{most} valuable. And in the same Period A, the two HMM-aware \emph{non}-QMDP baselines get Sharpe between 1.03 and 1.25. Same HMM signal. They just don't use the QMDP projection. \emph{The HMM signal was there. QMDP at $\gamma = 2$ destroyed it.}''}
+
+\subsection*{Transition}
+
+Click to advance. You stay on for Slide 13.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 13, The honest verdict}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Taka. \quad\textbf{Target time:} 55 seconds. \quad\textbf{Difficulty:} 4 / 5.
+
+\textbf{Note for Taka:} this is the single most important slide in the talk. It frames the contribution. Read each row carefully and deliberately. Pause between rows if helpful. Use exactly the MUST-SAY phrasing, it's tuned for honesty without underselling.
+
+\textbf{On screen.} Two-column table. Left (green): ``We DO claim'' (4 rows). Right (red): ``We do NOT claim'' (4 rows).
+
+\subsection*{Why this slide matters}
+
+The single most important slide. Frames the contribution as a \emph{negative-with-decomposition} rather than a failed positive headline. Done well, ``you didn't beat the benchmark'' turns into ``you isolated exactly which methodological choice drove the failure'', a stronger and more useful contribution.
+
+\subsection*{Background concepts}
+
+\textbf{What ``minimum tool'' means.} POMDP is the smallest correct model for our problem. Tree explodes, ID doesn't repeat, MDP requires observable state. Not ``best of all possible methods,'' just the smallest correct one.
+
+\textbf{What ``diagnostic of methodology'' means.} The headline negative result holds only under (a) narrow obs + (b) fixed HMM + (c) low CRRA. Each is reversible. A diagnostic, not a verdict.
+
+\textbf{Why HMM-MV / BL+HMM beating QMDP is the strongest evidence.} They use the same HMM signal. If signal were uninformative, they'd also fail. They don't. So signal is informative; QMDP at $\gamma = 2$ destroys it.
+
+\textbf{Why no production claim.} Even the walk-forward QMDP (Sharpe 1.08) doesn't beat Faber (1.68). Competitive but not dominant. Real costs would compress the margin.
+
+\textbf{Why negative-with-decomposition is the contribution.} A positive Sharpe-win paper is one more data point in a noisy literature. A negative result with explicit decomposition of which methodological component drives the verdict is more useful and falsifiable.
+
+\subsection*{Likely questions}
+
+\textbf{``Isn't this a weak result?''}\quad The headline is weak; the structure is strong. We are publishing a falsifiable diagnostic, which lever, if you flipped just that one, would reverse the verdict. That outlasts any specific sample's Sharpe.
+
+\textbf{``Why not publish walk-forward as the headline?''}\quad Because the headline should be the configuration most readers would default to. Showing those defaults produce a negative result is the diagnostic.
+
+\textbf{``Does this mean POMDP doesn't work for allocation?''}\quad No. It means POMDP at this specific parameterisation underperforms on this specific sample. The reversibility experiments show the result is fragile to methodological choices, not fundamental.
+
+\textbf{``What would convince you POMDP is good?''}\quad A joint configuration (cohort 3 + walk-forward + higher $\gamma$) beating Faber on Sharpe and matching it on Calmar, robust across all three subperiods, at realistic 25 bps costs. We didn't run that. Natural next experiment.
+
+\subsection*{Say}
+
+``So here's the honest verdict, written carefully. What we claim, and equally important, what we do \emph{not} claim.
+
+\mustsay{In the green column: We \emph{do} claim the POMDP framework is the right \emph{minimum} tool for this decision problem. We \emph{do} claim the headline negative finding is a diagnostic of methodology, not fundamentals, each component is reversible. We \emph{do} claim the HMM signal is informative; the other HMM-aware baselines beat QMDP. And we \emph{do} claim three components separately reverse the negative finding: observations, refit cadence, and risk aversion.}
+
+\mustsay{In the red column: we do \emph{not} claim that POMDP asset allocation beats simple trend-following, it doesn't, on our sample. We do \emph{not} claim the headline QMDP is a useful production policy. We do \emph{not} claim our walk-forward variant is the new state-of-the-art. And we do \emph{not} claim our Sharpe gains net of realistic transaction costs are large enough to matter to a real allocator.}
+
+\mustsay{What we are publishing is a \emph{negative-with-decomposition}. That kind of contribution stays useful longer than a positive headline, because the diagnostic outlasts any specific sample's Sharpe number. And it makes the work falsifiable, anyone who wants to argue QMDP works has to either reverse one of our diagnostic experiments or find a configuration we didn't test.''}
+
+\subsection*{Transition}
+
+Click to advance. You stay on for Slide 14.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 14, Three extensions in priority order}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Taka. \quad\textbf{Target time:} 25 seconds. \quad\textbf{Difficulty:} 2 / 5.
+
+\textbf{On screen.} Three numbered extensions: CVaR-penalised reward, PBVI, off-policy MC + Double Q-learning.
+
+\subsection*{Why this slide matters}
+
+Shows we have a plan for what's next. Each extension gets one sentence. Save depth for Q\&A.
+
+\subsection*{Background concepts}
+
+\textbf{CVaR.} Conditional Value-at-Risk: the expected loss given that the loss exceeds some quantile. A CVaR-penalised reward $R = \mathbb{E}[r] - \kappa \cdot \text{CVaR}_\alpha[r]$ explicitly penalises bear-regime tails. One line in our reward function.
+
+\textbf{PBVI.} Tighter approximate POMDP solver than QMDP. Maintains $\alpha$-vectors over reachable beliefs. On our 1-D belief simplex it would be cheap.
+
+\textbf{Off-policy MC + Double Q-learning.} A genuinely model-free baseline. Train a Q-learner on synthetic episodes from the calibrated HMM, with importance sampling correction. Cross-checks our model-based pipeline against learning from scratch.
+
+\subsection*{Likely questions}
+
+\textbf{``Which would you do first?''}\quad CVaR-penalised reward. Smallest change, largest potential impact, directly addresses the tail-risk concern.
+
+\textbf{``Why not run all three now?''}\quad Time. Listed in priority order.
+
+\subsection*{Say}
+
+``Three extensions, in priority order, that we'd take next.
+
+\mustsay{\emph{First}, a CVaR-penalised reward. Replace CRRA with one that explicitly penalises tail risk. One-line change to the reward function.}
+
+\mustsay{\emph{Second}, point-based value iteration. PBVI gives a tighter bound than QMDP by maintaining explicit $\alpha$-vectors over reachable beliefs. On our 1-D simplex it's basically free.}
+
+\mustsay{\emph{Third}, off-policy Monte Carlo with double Q-learning. A genuinely model-free baseline that does not assume our QMDP transition matrix. Cross-checks the model-based pipeline.''}
+
+\subsection*{Transition}
+
+Click to advance to the Thank You slide.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Slide 15, Thank you}
+%====================================================================
+
+\subsection*{Header}
+
+\textbf{Speaker:} Taka. \quad\textbf{Target time:} 10 seconds, then Q\&A. \quad\textbf{Difficulty:} 1 / 5.
+
+\textbf{On screen.} A clean ``Thank you.'' / ``Questions?'' slide.
+
+\subsection*{Why this slide matters}
+
+The close. Calm, brief.
+
+\subsection*{Who fields what in Q\&A}
+
+\begin{itemize}
+  \item Methodology / pipeline / refit cadence questions $\to$ Dario or Kyle.
+  \item QMDP / collapse / $\gamma$ / formula questions $\to$ Dario or Taka.
+  \item Horse race numbers / Faber / equity curves $\to$ Kyle.
+  \item Doctor analogy / opening framing $\to$ Even.
+  \item Cohort visual / Unlock 2 / verdict / extensions $\to$ Taka.
+\end{itemize}
+
+\subsection*{Say}
+
+\mustsay{``Thank you. We'd love your questions.''}
+
+\subsection*{Transition}
+
+Step back. All four stand together near the screen for Q\&A. If a teammate stumbles on an answer, jump in with the short version from the Q\&A appendix.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{Anticipated Q\&A, with prepared answers}
+%====================================================================
+
+\subsection*{Methodology questions (Dario or Kyle leads)}
+
+\textbf{``Why both VI and PI?''}\quad They should converge to the same value function. Agreement (to $2.6 \times 10^{-6}$) is a sanity check. PI is faster (2 vs.\ 125 iterations).
+
+\textbf{``Why monthly?''}\quad Macro regimes evolve on a monthly timescale. Daily would add cost without signal.
+
+\textbf{``Why $\lambda = 0.95$?''}\quad Effective horizon $\sim 20$ months, matches typical macro-regime duration.
+
+\textbf{``Why 5 bps cost?''}\quad Institutional-flow level. Retail would be 10--25 bps. Margin would compress at higher costs but not disappear.
+
+\subsection*{QMDP and $\gamma$ questions (Dario or Taka leads)}
+
+\textbf{``Why $\gamma = 2$ specifically?''}\quad Canonical baseline in consumption-asset-pricing. Empirical estimates of relative risk aversion cluster between 1 and 3. Negative result at the canonical $\gamma$ is more diagnostic than at a tuned $\gamma$.
+
+\textbf{``Could QMDP work at any $\gamma$?''}\quad At $\gamma = 8$ it crosses 60/40 on Sharpe, but the policy is still 40/60 in both regimes, a vol-reduction effect, not regime tilting. So strictly no, the regime label never moves the policy in our parameterisation.
+
+\textbf{``Would PBVI fix it?''}\quad PBVI gives tighter values but doesn't change the $Q^*$ table. The collapse is structural to low $\gamma$, not to the projection method.
+
+\subsection*{Data and observation questions (Kyle or Dario leads)}
+
+\textbf{``Why only 2 assets?''}\quad Ang and Bekaert 2002 predicted exactly that the gains from regime-aware allocation are small without a risk-free leg. Adding cash would give the regime structure more room. Two assets for clarity.
+
+\textbf{``How sure are you the HMM signal is informative?''}\quad Two pieces of evidence. HMM-MV and BL+HMM beat the static 60/40 using the same signal (outside QMDP). And the regime sequence matches NBER recessions without ever being trained on NBER.
+
+\textbf{``Why not HY OAS like the proposal said?''}\quad FRED truncates HY OAS to 3 years. NFCI and STLFSI4 substitute.
+
+\textbf{``Why 2003 start?''}\quad AGG launched September 2003. Longest window where everything is available.
+
+\subsection*{Verdict and framing questions (Taka leads)}
+
+\textbf{``Why is QMDP the headline if it loses?''}\quad It's the minimum-additional-machinery extension of the lecture-room MDP toolkit to a POMDP setting. The natural first thing to try. Showing exactly which methodological choice makes it fail is more useful than another paper claiming a Sharpe win.
+
+\textbf{``What would change the verdict?''}\quad Three things separately: richer observations, walk-forward refit, higher CRRA. Joint configuration would be the next experiment.
+
+\textbf{``Is the project a failure?''}\quad No. Negative headline is honest; decomposition is the contribution; reproducibility means anyone can extend.
+
+\subsection*{Comparison questions (anyone leads)}
+
+\textbf{``How does Faber beat QMDP?''}\quad Trend-following. Exits stocks before the worst of crashes. QMDP at $\gamma = 2$ never exits. Similar CAGR; Faber's drawdowns are much smaller.
+
+\textbf{``Why do HMM-MV and BL+HMM beat QMDP?''}\quad Use the HMM signal without the QMDP projection. HMM-MV runs Markowitz on belief-weighted moments; BL+HMM uses HMM-implied views with an equilibrium prior.
+
+\textbf{``Could ML beat all these?''}\quad Possibly. We didn't include ML baselines because they'd need their own training-set hygiene.
+
+\bigskip\hrule
+
+%====================================================================
+\section*{The numbers to land slowly, index card}
+%====================================================================
+
+\begin{itemize}
+  \item \textbf{17\%}, 2022 loss on 60/40. (Slide 2)
+  \item \textbf{$2.6\times 10^{-6}$}, VI/PI agreement. (Slide 4)
+  \item \textbf{12}, strategies in horse race. (Slide 6)
+  \item \textbf{1.68}, Faber's Sharpe. (Slide 6)
+  \item \textbf{0.73}, QMDP's Sharpe at $\gamma = 2$. (Slide 6)
+  \item \textbf{$-53\%$}, QMDP's max drawdown. (Slides 6, 7)
+  \item \textbf{1.08}, walk-forward QMDP Sharpe. (Slide 11)
+  \item \textbf{$-16.5\%$}, walk-forward QMDP max drawdown. (Slide 11)
+  \item \textbf{0.33}, QMDP's worst subperiod Sharpe (Period A, GFC). (Slide 12)
+  \item \textbf{1.03--1.25}, HMM-MV / BL+HMM Sharpe in same Period A. (Slide 12)
+\end{itemize}
+
+\bigskip
+\begin{center}
+\textit{Ten minutes, ten numbers. Land on them slowly.}
+\end{center}
+
+\end{document}

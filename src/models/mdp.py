@@ -7,11 +7,11 @@ Implements:
     - extract_greedy_policy(P, R, V, lam): argmax operator.
 
 Shapes:
-    P: (A, S, S) — transition tensor, P[a, s, s'] = p(s' | s, a)
+    P: (A, S, S), transition tensor, P[a, s, s'] = p(s' | s, a)
                    (NOTE: in our problem regimes are exogenous to action, so
                     P[a, s, s'] = T_HMM[s, s'] for every action a.)
-    R: (S, A)    — expected reward per (state, action).
-    V: (S,)      — value function.
+    R: (S, A)   , expected reward per (state, action).
+    V: (S,)     , value function.
 """
 from __future__ import annotations
 

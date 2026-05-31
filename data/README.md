@@ -8,8 +8,8 @@ to the latest available data.
 
 ## Structure
 
-- [`raw/`](raw/) — one CSV per upstream source (FRED, Yahoo). Daily frequency where applicable.
-- [`processed/`](processed/) — aligned monthly frame used by all downstream experiments, plus pickled HMM models.
+- [`raw/`](raw/), one CSV per upstream source (FRED, Yahoo). Daily frequency where applicable.
+- [`processed/`](processed/), aligned monthly frame used by all downstream experiments, plus pickled HMM models.
 
 ## Sources (clickable)
 
@@ -24,9 +24,9 @@ Every series has both a clickable link to its primary source page and a link to 
 | [`raw/spy.csv`](raw/spy.csv) | [Yahoo Finance · SPY](https://finance.yahoo.com/quote/SPY/) | Daily → monthly EOM | `SPY` | SPDR S&P 500 ETF adjusted-close |
 | [`raw/agg.csv`](raw/agg.csv) | [Yahoo Finance · AGG](https://finance.yahoo.com/quote/AGG/) | Daily → monthly EOM | `AGG` | iShares Core US Aggregate Bond ETF adjusted-close (starts Sep 2003 → sets the monthly-panel start date) |
 | [`processed/monthly.csv`](processed/monthly.csv) | (derived) | Monthly EOM | aligned frame | What every downstream experiment reads. 271 rows, 2003-10-31 → 2026-04-30 |
-| [`processed/hmm_2state.pkl`](processed/hmm_2state.pkl) | (derived) | — | trained model | `hmmlearn.GaussianHMM` with 2 regimes, fit on (VIX, term spread) |
-| [`processed/hmm_3state.pkl`](processed/hmm_3state.pkl) | (derived) | — | trained model | 3-state variant (used for the K-sweep figure only) |
-| [`processed/hmm_4state.pkl`](processed/hmm_4state.pkl) | (derived) | — | trained model | 4-state variant (used for the K-sweep figure only) |
+| [`processed/hmm_2state.pkl`](processed/hmm_2state.pkl) | (derived) |, | trained model | `hmmlearn.GaussianHMM` with 2 regimes, fit on (VIX, term spread) |
+| [`processed/hmm_3state.pkl`](processed/hmm_3state.pkl) | (derived) |, | trained model | 3-state variant (used for the K-sweep figure only) |
+| [`processed/hmm_4state.pkl`](processed/hmm_4state.pkl) | (derived) |, | trained model | 4-state variant (used for the K-sweep figure only) |
 
 ## `processed/monthly.csv` schema
 

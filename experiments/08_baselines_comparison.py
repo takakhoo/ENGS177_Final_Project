@@ -6,11 +6,11 @@ transaction cost. Produces a comparison table and an equity-curve figure
 suitable for the extended report.
 
 Outputs:
-  results/baselines_metrics.csv     — full metrics table (Sharpe, Sortino, Omega, etc.)
-  results/baselines_weights.csv     — month-end weights per strategy (stacked)
-  figures/baselines_equity.{pdf,png}  — log-scale equity curves
-  figures/baselines_drawdown.{pdf,png} — drawdown over time
-  figures/baselines_sharpe_bar.{pdf,png} — bar chart of headline metrics
+  results/baselines_metrics.csv    , full metrics table (Sharpe, Sortino, Omega, etc.)
+  results/baselines_weights.csv    , month-end weights per strategy (stacked)
+  figures/baselines_equity.{pdf,png} , log-scale equity curves
+  figures/baselines_drawdown.{pdf,png}, drawdown over time
+  figures/baselines_sharpe_bar.{pdf,png}, bar chart of headline metrics
 
 Note: HMM-conditional MV and Black-Litterman with HMM views require the
 fitted HMM and per-date belief. We compute belief on the fly using the
@@ -37,6 +37,7 @@ from src.models.baselines import (  # noqa: E402
     backtest_from_weights,
 )
 from src.models.qmdp import update_belief, stationary_distribution  # noqa: E402
+from src.models.hmm import standardized_obs  # noqa: E402
 from src.utils.metrics import summarize, max_drawdown  # noqa: E402
 
 DATA = REPO / "data" / "processed"
@@ -95,13 +96,15 @@ def main() -> None:
 
     asset_rets = df[["spy_ret", "agg_ret"]].copy()
 
-    # Belief series for HMM-aware baselines
+    # Belief series for HMM-aware baselines.
+    # Standardize with fit-time train stats: the pickled HMM's emissions live in
+    # z-scored space, so feeding raw obs collapses the belief onto one regime.
     obs_cols = ["vix", "term_spread"]
-    obs = df[obs_cols].values
+    obs = standardized_obs(df, obs_cols)
     belief = compute_belief_series(obs, model)
     belief.index = df.index
 
-    regime_means_obs = list(model.means_)  # (K,) of shape (d_obs,) — emissions, not returns
+    regime_means_obs = list(model.means_)  # (K,) of shape (d_obs,), emissions, not returns
     regime_covs_obs = list(model.covars_)
 
     # Build regime-conditional asset return moments
@@ -184,7 +187,7 @@ def main() -> None:
         ax.plot(cum.index, cum.values, lw=1.4, label=name)
     ax.set_yscale("log")
     ax.set_ylabel("Cumulative wealth (log scale), $1 → $X")
-    ax.set_title("All-baselines backtest 2003–2026 — SPY/AGG monthly, 5 bps cost")
+    ax.set_title("All-baselines backtest 2003–2026, SPY/AGG monthly, 5 bps cost")
     ax.legend(loc="best", fontsize=8, ncol=3)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -200,7 +203,7 @@ def main() -> None:
         dd = cum / rm - 1.0
         ax.plot(dd.index, dd.values * 100, lw=1.2, label=name)
     ax.set_ylabel("Drawdown (%)")
-    ax.set_title("Drawdown timeseries — all baselines")
+    ax.set_title("Drawdown timeseries, all baselines")
     ax.legend(loc="best", fontsize=8, ncol=3)
     ax.grid(True, alpha=0.3)
     fig.tight_layout()
@@ -222,7 +225,7 @@ def main() -> None:
         ax=axes[1, 1], color="#a33"); axes[1, 1].set_title("Max drawdown (more-negative is worse)")
     for ax in axes.ravel():
         ax.tick_params(axis="x", labelrotation=45)
-    fig.suptitle("Risk-adjusted performance — all baselines", y=1.02)
+    fig.suptitle("Risk-adjusted performance, all baselines", y=1.02)
     fig.tight_layout()
     fig.savefig(FIG / "baselines_sharpe_bar.pdf")
     fig.savefig(FIG / "baselines_sharpe_bar.png", dpi=150)

@@ -23,10 +23,11 @@ from src.models.hmm import fit_hmm  # noqa: E402
 
 DATA = REPO / "data" / "processed"
 FIG = REPO / "figures"
+TRAIN_END = "2014-12-31"   # match canonical fit window (02 / 09); no look-ahead
 
 COHORTS = {
     "1: VIX + 10Y3M (baseline)":         ["vix", "term_spread"],
-    "3: + NFCI + STLFSI4 (unlock!)":     ["vix", "term_spread", "nfci", "stlfsi"],
+    "3: + NFCI + STLFSI4 (+ stress)":    ["vix", "term_spread", "nfci", "stlfsi"],
     "5: kitchen sink (8 channels)":      ["vix", "term_spread", "term_spread_2y", "nfci", "stlfsi",
                                           "umcsent", "jobless_claims", "usd_index"],
 }
@@ -52,10 +53,13 @@ def main() -> None:
         avail = [c for c in cols if c in df.columns]
         sub = df[avail].dropna()
         arr = sub.values
-        mu = arr.mean(axis=0); sd = arr.std(axis=0); sd[sd == 0] = 1
+        # Standardize with TRAIN-window stats and fit on the train window only
+        # (no look-ahead), matching the canonical methodology in 02 / 09.
+        n_train = int((sub.index <= pd.Timestamp(TRAIN_END)).sum())
+        mu = arr[:n_train].mean(axis=0); sd = arr[:n_train].std(axis=0); sd[sd == 0] = 1
         std = (arr - mu) / sd
-        # Fit 2-state
-        model, _ = fit_hmm(std, n_states=2, n_restarts=5, seed=ax_idx + 1)
+        # Fit 2-state on the training window, smooth over the full sample
+        model, _ = fit_hmm(std[:n_train], n_states=2, n_restarts=5, seed=ax_idx + 1)
         # Posterior (smoothed) probabilities
         gamma_post = model.predict_proba(std)
         # Reorder so state 0 = bull = highest mean SPY return

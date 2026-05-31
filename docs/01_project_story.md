@@ -6,19 +6,19 @@
 
 ## Where it started
 
-In 2022, a textbook 60/40 stock-bond portfolio lost roughly **17%**. Both stocks AND bonds fell together under persistent inflation — exactly the failure mode the 60/40 mix is sold as protecting against. We asked: *can a decision-theoretic regime overlay, built end-to-end on public macroeconomic data, beat the static benchmark out-of-sample after realistic transaction costs?*
+In 2022, a textbook 60/40 stock-bond portfolio lost roughly **17%**. Both stocks AND bonds fell together under persistent inflation, exactly the failure mode the 60/40 mix is sold as protecting against. We asked: *can a decision-theoretic regime overlay, built end-to-end on public macroeconomic data, beat the static benchmark out-of-sample after realistic transaction costs?*
 
 By "decision-theoretic" we meant three things:
-1. The allocation rule is the **solution of an explicit optimisation** — not a discretionary heuristic.
-2. The latent macro regime is treated as a **hidden state** and inferred by a **Bayesian filter** — not labelled by hand.
-3. The policy is the **QMDP approximation of an underlying POMDP** — making it falsifiable, comparable, and explainable.
+1. The allocation rule is the **solution of an explicit optimisation**, not a discretionary heuristic.
+2. The latent macro regime is treated as a **hidden state** and inferred by a **Bayesian filter**, not labelled by hand.
+3. The policy is the **QMDP approximation of an underlying POMDP**, making it falsifiable, comparable, and explainable.
 
 ## The framework: POMDP
 
 Three observations together force the POMDP formulation:
-- The **regime is latent** — we never observe it directly.
-- The **observations are noisy** — VIX and term spread are imperfect proxies.
-- The **decisions are sequential** — current allocation affects future wealth and future beliefs.
+- The **regime is latent**, we never observe it directly.
+- The **observations are noisy**, VIX and term spread are imperfect proxies.
+- The **decisions are sequential**, current allocation affects future wealth and future beliefs.
 
 Decision trees explode with horizon. Influence diagrams blow up the same way for repeated rebalances. Fully-observable MDPs assume what we can't observe. POMDP is the minimum tool.
 
@@ -28,7 +28,7 @@ In Powell's (2019) four-class taxonomy, our QMDP solution is a **value function 
 
 Out-of-sample backtest, 2003–2026, SPY + AGG, monthly rebalance, 5 bps tx cost. We benchmarked QMDP against a static 60/40 and ten other strategies spanning the academic and practitioner consensus.
 
-> **QMDP at CRRA γ=2 finishes LAST of twelve on Sharpe (0.73 vs static's 0.81).** Faber's 10-month moving-average rule wins (Sharpe 1.68). The underlying MDP collapses to "100% stocks" in BOTH regimes — so QMDP is effectively a leveraged equity strategy with the deepest drawdown in the comparison (−53% in 2008).
+> **QMDP at CRRA γ=2 finishes LAST of twelve on Sharpe (0.73 vs static's 0.81).** Faber's 10-month moving-average rule wins (Sharpe 1.68). The underlying MDP collapses to "100% stocks" in BOTH regimes, so QMDP is effectively a leveraged equity strategy with the deepest drawdown in the comparison (−53% in 2008).
 
 If we'd stopped there, the story would be: "regime-aware allocation is a bad idea, simple trend-following wins." That's how every regime-switching paper *that publishes a negative result* concludes.
 
@@ -46,7 +46,7 @@ Guidolin–Timmermann (2007) predict that narrow observation sets fail to differ
 |---|---|---|---|---|
 | 1. Baseline | VIX, T10Y3M | 100/0 | 100/0 | No |
 | 2. +Yield curve | +T10Y2Y | 100/0 | 100/0 | No |
-| **3. +Stress** | **+NFCI, +STLFSI4** | **100/0** | **0/100** | **Yes — full flip** |
+| **3. +Stress** | **+NFCI, +STLFSI4** | **100/0** | **0/100** | **Yes, full flip** |
 | 4. +Macro | +NFCI, +UMCSENT, +ICSA | 100/0 | 0/100 | Yes |
 | 5. Kitchen sink | 8 channels | 100/0 | 60/40 | Yes |
 
@@ -74,15 +74,15 @@ Our headline "QMDP loses" holds **only** in the joint configuration of:
 
 Each component is empirically reversible. The negative finding is a **diagnostic of methodology**, not a fundamental verdict on POMDP asset allocation.
 
-This aligns tightly with the literature: Ang–Bekaert (2002) predict it (no risk-free leg, so regime label has nowhere to act); Guidolin–Timmermann (2007) predict it (needs 4+ states or richer observations); Nystrup et al. (2018) predict it (regime models need walk-forward refit); Tu (2010) predicts it (low γ leaves no room for regime signal to dominate). What is unique about our contribution: we publish the **joint diagnostic decomposition** — exactly which methodological component drives the headline verdict, with all three failure modes traced to the relevant prior work.
+This aligns tightly with the literature: Ang–Bekaert (2002) predict it (no risk-free leg, so regime label has nowhere to act); Guidolin–Timmermann (2007) predict it (needs 4+ states or richer observations); Nystrup et al. (2018) predict it (regime models need walk-forward refit); Tu (2010) predicts it (low γ leaves no room for regime signal to dominate). What is unique about our contribution: we publish the **joint diagnostic decomposition**, exactly which methodological component drives the headline verdict, with all three failure modes traced to the relevant prior work.
 
 ## The honest verdict
 
 We do **not** claim a Sharpe win for POMDP asset allocation. We **do** claim:
 1. The POMDP framework is the right *minimum* tool for the decision problem.
-2. The headline negative finding is a diagnostic of methodology, not fundamentals — reversed in isolation by richer observations, walk-forward refit, or higher CRRA.
-3. The HMM signal itself is informative — HMM-MV and BL+HMM both beat QMDP, indicating QMDP's projection at γ=2 destroys it.
-4. Trend-following is the practitioner-consensus bar — we did not clear it.
+2. The headline negative finding is a diagnostic of methodology, not fundamentals, reversed in isolation by richer observations, walk-forward refit, or higher CRRA.
+3. The HMM signal itself is informative, HMM-MV and BL+HMM both beat QMDP, indicating QMDP's projection at γ=2 destroys it.
+4. Trend-following is the practitioner-consensus bar, we did not clear it.
 
 ## Three extensions in priority order
 
@@ -94,11 +94,11 @@ We do **not** claim a Sharpe win for POMDP asset allocation. We **do** claim:
 
 ## Where to go next in this folder
 
-- **[`02_class_concepts.md`](02_class_concepts.md)** — math machinery (Bayes filter, Markov chains, VI, PI, QMDP) mapped to code.
-- **[`03_intuition_primer.md`](03_intuition_primer.md)** — ten analogies (doctor-and-symptoms, casino dealer, surfing waves) that explain every moving part without math.
-- **[`04_experiments_guide.md`](04_experiments_guide.md)** — what each `experiments/0X_*.py` script does, in order.
-- **[`05_practitioner_baselines_survey.md`](05_practitioner_baselines_survey.md)** — 3,700-word survey of what real institutional allocators actually do.
-- **[`06_academic_literature_survey.md`](06_academic_literature_survey.md)** — 3,500-word survey of regime-switching asset allocation literature.
-- **[`07_supplementary_papers_synthesis.md`](07_supplementary_papers_synthesis.md)** — 3,400-word synthesis of the 11 ENGS 177 supplementary papers; introduces the Powell (2019) taxonomy reframing.
+- **[`02_class_concepts.md`](02_class_concepts.md)**, math machinery (Bayes filter, Markov chains, VI, PI, QMDP) mapped to code.
+- **[`03_intuition_primer.md`](03_intuition_primer.md)**, ten analogies (doctor-and-symptoms, casino dealer, surfing waves) that explain every moving part without math.
+- **[`04_experiments_guide.md`](04_experiments_guide.md)**, what each `experiments/0X_*.py` script does, in order.
+- **[`05_practitioner_baselines_survey.md`](05_practitioner_baselines_survey.md)**, 3,700-word survey of what real institutional allocators actually do.
+- **[`06_academic_literature_survey.md`](06_academic_literature_survey.md)**, 3,500-word survey of regime-switching asset allocation literature.
+- **[`07_supplementary_papers_synthesis.md`](07_supplementary_papers_synthesis.md)**, 3,400-word synthesis of the 11 ENGS 177 supplementary papers; introduces the Powell (2019) taxonomy reframing.
 
 For full math derivations, code listings, glossary, and per-experiment detail, see [`../report/extended_report.pdf`](../report/extended_report.pdf) (38 pages).
