@@ -6,7 +6,7 @@
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
 \usepackage{microtype}
-\usepackage{setspace}\setstretch{1.03}
+\usepackage{setspace}\setstretch{1.0}
 
 % ===== Math =====
 \usepackage{amsmath,amssymb,amsfonts,amsthm,mathtools,bm}
@@ -14,8 +14,14 @@
 % ===== Figures, tables, code =====
 \usepackage{graphicx}
 \usepackage{booktabs,array,multirow}
-\usepackage{caption}\captionsetup{font=small,labelfont=bf}
+\usepackage{caption}\captionsetup{font=small,labelfont=bf,skip=4pt}
 \usepackage{subcaption}
+% Compress float/caption spacing to respect the page limit at fixed 1-in margins, 11pt.
+\setlength{\textfloatsep}{8pt plus 2pt minus 2pt}
+\setlength{\intextsep}{8pt plus 2pt minus 2pt}
+\setlength{\floatsep}{8pt plus 2pt minus 2pt}
+\setlength{\abovedisplayskip}{5pt plus 2pt minus 2pt}
+\setlength{\belowdisplayskip}{5pt plus 2pt minus 2pt}
 \usepackage{listings}
 \usepackage{enumitem}
 \usepackage{xcolor}
@@ -74,10 +80,10 @@
 \maketitle
 
 \begin{abstract}\noindent
-We model dynamic stock-bond allocation as a Partially Observable Markov Decision Process (POMDP) whose latent state is the prevailing macro-financial regime. A two-state Gaussian Hidden Markov Model (HMM) is fit by Baum--Welch on the VIX and the 10Y--3M Treasury term spread; a recursive Bayesian filter maintains a belief $\bel_t$ over the latent regime, updated each month from the new observation. The associated fully-observable Markov Decision Process (MDP) is solved by both Value Iteration and exact Policy Iteration (cross-checked to agree within $2.6\times 10^{-6}$). The QMDP approximation \cite{littman1995}, which we derive explicitly from the belief-space Bellman equation as a one-step value-function approximation, selects the weight that maximises the belief-weighted action value $\sum_s \bel_t(s)\,Q^\ast(s,\mathbf a)$ at each rebalance. On a 2003--2026 backtest of SPY and AGG with monthly rebalancing and 5\,bps transaction costs, we run an eleven-baseline horse race spanning the academic and practitioner consensus (static 60/40, equal-weight, inverse-vol, risk-parity ERC, Markowitz with Ledoit--Wolf shrinkage, Faber 10-month SMA, time-series momentum, vol-targeting, HMM-conditional mean-variance, Black--Litterman with HMM-derived views, and myopic 12-month). At the canonical CRRA $\gamma{=}2$, the underlying MDP is genuinely regime-differentiated: the optimal policy is 100\% equity in the bull regime and 100\% bonds in the bear regime, and the resulting QMDP policy attains a Sharpe ratio of \textbf{1.18} (4th of twelve), comfortably beating the static 60/40 (0.81) and essentially tying the HMM-conditional mean-variance baseline (1.20), while cutting maximum drawdown from $-34\%$ to $-14\%$. The belief filter is genuinely recursive: $P(\text{bear}\mid\mathbf o_{1:t})$ tracks every NBER recession and the 2015--16 and 2022 stress episodes, and a single VIX spike flips the belief from $0.3\%$ to $98.7\%$ bear in one filter step. The honest verdict is that a correctly-specified POMDP regime overlay is a competitive risk-adjusted allocator that beats the static benchmark, though it does not overtake the practitioner-consensus trend rule (Faber, 1.68). Regime differentiation is robust across CRRA levels, observation cohorts, and three economically distinct sub-periods; expanding-window walk-forward refit \cite{nystrup2018} further improves it. We position QMDP within Powell's~\cite{powell2019} taxonomy as a value-function approximation with one-step direct lookahead.
+We model dynamic stock-bond allocation as a Partially Observable Markov Decision Process (POMDP) whose latent state is the prevailing macro-financial regime. A two-state Gaussian Hidden Markov Model (HMM) is fit by Baum--Welch on the VIX and the 10Y--3M Treasury term spread, and a recursive Bayesian filter maintains a belief $\bel_t$ over the regime, updated each month from the new observation. We solve the associated fully-observable MDP by both Value Iteration and exact Policy Iteration (agreeing within $2.6\times 10^{-6}$), and derive the QMDP rule \cite{littman1995} explicitly from the belief-space Bellman equation as a one-step value-function approximation: at each rebalance it selects the weight maximising $\sum_s \bel_t(s)\,Q^\ast(s,\mathbf a)$. On a 2003--2026 backtest of SPY and AGG (monthly rebalancing, 5\,bps cost) we run an eleven-baseline horse race spanning the academic and practitioner consensus, from the static 60/40 and risk parity to Faber trend-following and HMM-conditional mean-variance. At the canonical CRRA $\gamma{=}2$ the underlying MDP is genuinely regime-differentiated (100\% equity in the bull regime, 100\% bonds in the bear regime), and the resulting QMDP policy attains a Sharpe ratio of \textbf{1.18} (4th of twelve), beating the static 60/40 (0.81), essentially tying HMM-conditional mean-variance (1.20), and cutting maximum drawdown from $-34\%$ to $-14\%$. The belief filter is genuinely recursive: $P(\text{bear}\mid\mathbf o_{1:t})$ tracks every NBER recession, and a single VIX spike flips it from $0.3\%$ to $98.7\%$ bear in one step. The honest verdict: a correctly-specified POMDP overlay is a competitive risk-adjusted allocator that beats the static benchmark but does not overtake trend-following (Faber, 1.68). This regime differentiation is robust across CRRA levels, observation cohorts, and three economically distinct sub-periods, and improves further under expanding-window refit \cite{nystrup2018}. We position QMDP in Powell's \cite{powell2019} taxonomy as a value-function approximation with one-step direct lookahead.
 \end{abstract}
 
-\bigskip\hrule\medskip
+\medskip\hrule\medskip
 
 %================================================
 \section{Introduction}\label{sec:intro}
@@ -87,7 +93,7 @@ A long-only investor must choose, every month, the weights of a portfolio of two
 
 \paragraph{Research question.} We test the implicit claim of every regime-switching paper: \emph{Can a fully decision-theoretic regime overlay (formalised as a POMDP, fit to public macro-financial data, solved by a tractable belief-state heuristic) beat the static $60/40$ benchmark out-of-sample after realistic transaction costs?} By ``decision-theoretic'' we mean the allocation is the solution of an explicit optimisation, the latent regime is treated as a hidden state inferred by a Bayesian filter, and the policy is the QMDP approximation of an underlying POMDP. Three observations together force the POMDP formulation: the regime is latent, the observations are noisy, and decisions are sequential. Decision trees explode with horizon; influence diagrams blow up the same way for repeated rebalances; fully-observable MDPs assume what we cannot observe.
 
-\paragraph{Contributions.} (i)~an explicit derivation of the QMDP rule from the belief-space Bellman equation, together with a fully-specified recursive belief filter and a worked numerical example (\Cref{sec:pomdp,sec:vi-pi}), the methodological core; (ii)~an eleven-baseline horse race spanning the academic and practitioner consensus (\Cref{sec:horserace}), in which the QMDP overlay beats the static 60/40 and ties the HMM-conditional mean-variance baseline; (iii)~robustness evidence that the regime-differentiated policy holds across CRRA levels (\Cref{sec:gamma-sweep}), observation cohorts (\Cref{sec:multifeature}), and three economically distinct sub-periods (\Cref{sec:subperiod}), with expanding-window walk-forward refit \cite{nystrup2018} a further improvement (\Cref{sec:walk-forward}); (iv)~a Powell-taxonomy positioning of QMDP as a VFA + one-step DLA; (v)~a fully reproducible public code release spanning 14 public data series, 12 strategies, and 13 experiments.
+\paragraph{Contributions.} (i)~an explicit derivation of the QMDP rule from the belief-space Bellman equation, together with a fully-specified recursive belief filter and a worked numerical example (\Cref{sec:pomdp,sec:vi-pi}), the methodological core; (ii)~an eleven-baseline horse race spanning the academic and practitioner consensus (\Cref{sec:horserace}), in which the QMDP overlay beats the static 60/40 and ties the HMM-conditional mean-variance baseline; (iii)~robustness evidence that the regime-differentiated policy holds across CRRA levels (\Cref{sec:gamma-sweep}), observation cohorts (\Cref{sec:multifeature}), and three economically distinct sub-periods (\Cref{sec:subperiod}), with expanding-window walk-forward refit \cite{nystrup2018} a further improvement (\Cref{sec:walk-forward}); (iv)~a Powell-taxonomy positioning of QMDP as a VFA + one-step DLA; and (v)~a fully reproducible public code release.
 
 %================================================
 \section{Background}\label{sec:background}
@@ -97,7 +103,7 @@ A long-only investor must choose, every month, the weights of a portfolio of two
 
 \paragraph{POMDP framework.} A Partially Observable MDP \cite{kaelbling1998} assumes the agent observes only a noisy function of the latent state and maintains a probability distribution (belief) over the state. Exact POMDP solution is PSPACE-hard; the QMDP approximation \cite{littman1995} projects the belief onto the action-value function of the fully-observable MDP. We use QMDP because (i)~it is exact when the belief is a Dirac measure, (ii)~it reduces to a standard infinite-horizon MDP solver, and (iii)~in our setting there is no action that improves observability of the regime (we observe VIX and the term spread regardless of allocation), so the well-known weakness of QMDP (failure to motivate information-gathering actions \cite{hauskrecht2000}) does not bind. Point-based value iteration \cite{pineau2003} is a tighter alternative but unnecessary on our 2-state model with a 1-dimensional belief simplex.
 
-\paragraph{Powell taxonomy positioning.} Powell \cite{powell2019} unifies sequential decision-making into four meta-classes: policy function approximations (PFAs), cost function approximations (CFAs), value function approximations (VFAs), and direct lookahead approximations (DLAs). QMDP fits naturally as a \emph{VFA} in which the belief-state value function $V(\bel)$ is approximated by the linear lower envelope $V_{\mathrm{QMDP}}(\bel) = \max_a \sum_s b(s) Q^\ast_{\mathrm{MDP}}(s,a)$, combined with a \emph{one-step DLA} at decision time. This sentence is the project's theoretical anchor: we are using the MDP value function as a VFA on the belief MDP and selecting actions via a one-step lookahead.
+\paragraph{Powell taxonomy positioning.} Powell \cite{powell2019} unifies sequential decision-making into four meta-classes: policy function approximations (PFAs), cost function approximations (CFAs), value function approximations (VFAs), and direct lookahead approximations (DLAs). QMDP fits naturally as a \emph{VFA} in which the belief-state value function $V(\bel)$ is approximated by the linear lower envelope $V_{\mathrm{QMDP}}(\bel) = \max_a \sum_s b(s) Q^\ast_{\mathrm{MDP}}(s,a)$, combined with a \emph{one-step DLA} at decision time. This is the project's theoretical anchor.
 
 \paragraph{Practitioner consensus.} The empirical winner of published two-asset tactical horse races (Faber \cite{faber2007}, Hurst--Ooi--Pedersen ``Century of Evidence'' \cite{hurst2017}, Moskowitz--Ooi--Pedersen \cite{moskowitz2012}, Moreira--Muir \cite{moreira2017}) is consistently \emph{time-series momentum with volatility targeting and cash fallback}, reporting Sharpe 0.85--1.10 on SPY+AGG 1990--2024. This is the empirical bar our QMDP must clear.
 
@@ -121,12 +127,12 @@ with $\gamma{=}2$; and $\lambda=0.95$. Transaction costs ($c{=}5$\,bps of $\lVer
 \text{(predict)}\quad & \hat\bel_t(s') = \textstyle\sum_s T(s'\mid s)\,\bel_{t-1}(s), \label{eq:predict}\\
 \text{(update)}\quad  & \bel_t(s') = \frac{O(\mathbf{o}_t\mid s')\,\hat\bel_t(s')}{\sum_{s''}O(\mathbf{o}_t\mid s'')\,\hat\bel_t(s'')}. \label{eq:bayes}
 \end{align}
-The predict step advances last month's belief through the regime dynamics (it nudges the belief toward the other regime by the small switch probability); the update step multiplies by the Gaussian observation likelihood $O(\mathbf{o}_t\mid s')=\mathcal{N}(\mathbf{o}_t;\boldsymbol\mu_{s'},\boldsymbol\Sigma_{s'})$ and renormalises. We initialise $\bel_0$ at the stationary distribution of $T$ and run \cref{eq:predict,eq:bayes} forward over all 271 months; the resulting $P(\text{bear}\mid\mathbf{o}_{1:t})$ is plotted in \Cref{fig:belief}.
+The predict step advances last month's belief through the regime dynamics; the update step multiplies by the Gaussian observation likelihood $O(\mathbf{o}_t\mid s')=\mathcal{N}(\mathbf{o}_t;\boldsymbol\mu_{s'},\boldsymbol\Sigma_{s'})$ and renormalises. We initialise $\bel_0$ at the stationary distribution of $T$ and run \cref{eq:predict,eq:bayes} forward over all 271 months; the resulting $P(\text{bear}\mid\mathbf{o}_{1:t})$ is plotted in \Cref{fig:belief}.
 
-\paragraph{Worked example (a single filter step).} In August~2015, at the onset of the China/oil shock, the filter held $\bel_{t-1}=(\text{bull }0.997,\ \text{bear }0.003)$. The predict step \eqref{eq:predict} moves this to $\hat\bel_t=(0.985,\,0.015)$. That month's observation (VIX$=28.4$) is $\approx\!5{,}000\times$ more likely under the bear emission than the bull emission, so the update step \eqref{eq:bayes} flips the posterior to $\bel_t=(\text{bull }0.013,\ \text{bear }0.987)$ in one step. The belief is genuinely data-driven and responsive; it is not a label assigned by hand.
+\paragraph{Worked example (a single filter step).} In August~2015, at the onset of the China/oil shock, the filter held $\bel_{t-1}=(\text{bull }0.997,\ \text{bear }0.003)$. The predict step \eqref{eq:predict} moves this to $\hat\bel_t=(0.985,\,0.015)$. That month's observation (VIX$=28.4$) is $\approx\!5{,}000\times$ more likely under the bear emission than the bull emission, so the update step \eqref{eq:bayes} flips the posterior to $\bel_t=(\text{bull }0.013,\ \text{bear }0.987)$ in one step: the belief is genuinely data-driven, not a hand-assigned label.
 
 \begin{figure}[H]\centering
-\includegraphics[width=0.95\linewidth]{../figures/belief_trajectory.pdf}
+\includegraphics[width=0.66\linewidth]{../figures/belief_trajectory.pdf}
 \caption{Recursively-filtered posterior $P(\text{bear}\mid\mathbf{o}_{1:t})$ from \cref{eq:predict,eq:bayes}, started at the stationary prior and run forward over 2003--2026 (canonical 2-state HMM on VIX + term spread). The belief spends 26\% of months in the bear-dominant region and cleanly brackets the 2008 GFC, the 2015--16 China/oil episode, the 2020 COVID shock, and the 2022 inflation drawdown; NBER recessions shaded grey. This is the artifact that demonstrates the belief state is real and updated, not a fixed label.}\label{fig:belief}
 \end{figure}
 
@@ -155,9 +161,9 @@ The predict step advances last month's belief through the regime dynamics (it nu
 \draw[->] (mdp)   -- (q)   node[elab, above]{VI\,/\,PI};
 
 % ---- Bottom row: online execution (filter the belief, act, every month) ----
-\node[proc, below=22mm of hmm] (filter) {Bayes\\filter};
-\node[dec,  below=22mm of mdp] (qmdp)   {QMDP};
-\node[art,  below=22mm of q]   (back)   {backtest\\wealth};
+\node[proc, below=16mm of hmm] (filter) {Bayes\\filter};
+\node[dec,  below=16mm of mdp] (qmdp)   {QMDP};
+\node[art,  below=16mm of q]   (back)   {backtest\\wealth};
 
 \draw[->] (filter) -- (qmdp) node[elab, above]{belief $\bel_t$};
 \draw[->] (qmdp)   -- (back) node[elab, above]{weights $\mathbf{a}_t$};
@@ -208,13 +214,13 @@ with $Q^\ast(s,\mathbf{a})=R(s,\mathbf{a})+\lambda\sum_{s'}T(s'\mid s)V^\ast(s')
 \end{equation}
 Three properties make this a principled choice rather than a heuristic. \emph{(i) Exactness at certainty:} if $\bel=\mathbf{e}_s$ (a Dirac on regime $s$), \cref{eq:qmdp} reduces to the exact MDP policy $\argmax_a Q^\ast(s,a)$. \emph{(ii) Upper bound:} $V_{\mathrm{QMDP}}(\bel)=\max_a Q_{\mathrm{QMDP}}(\bel,\mathbf a)\ge V^\ast(\bel)$ pointwise, because giving the agent free state information after one step can only help \cite{hauskrecht2000}; QMDP is thus an optimistic but consistent approximation. \emph{(iii) The one assumption it makes is harmless here:} QMDP cannot value information-gathering actions (it assumes the state is about to be revealed for free), but in our problem \emph{no action affects observability} (we observe VIX and the term spread regardless of how we allocate), so $\Prb(\mathbf{o}\mid\bel,\mathbf{a})$ in \cref{eq:belief-bellman} is action-independent and the only thing QMDP gives up is exactly the thing that does not matter. Point-based value iteration \cite{pineau2003} would tighten the bound but is unnecessary on our one-dimensional belief simplex. In Powell's \cite{powell2019} taxonomy, \cref{eq:qmdp} is a \emph{value-function approximation} (the MDP $Q^\ast$ used as a linear functional of the belief) composed with a \emph{one-step direct lookahead}.
 
-\paragraph{What we actually computed.} The action space is the $M{=}6$-point grid $\action=\{(w_S,1{-}w_S):w_S\in\{0,0.2,\dots,1\}\}$, so $Q^\ast$ is a $2\times 6$ table. The reward $R$ is built by Monte Carlo: for each regime we draw $5{,}000$ samples of the joint $(\text{SPY},\text{AGG})$ monthly return from that regime's empirical conditional distribution (regimes assigned by the HMM \emph{in standardised observation space}, matching calibration) and average $U_2(1+\mathbf a^\top\mathbf r)$. At $\gamma{=}2$ the resulting $Q^\ast$ is monotonically increasing in the stock weight for the bull regime (so $\pi^\ast(\text{bull})=100/0$) and monotonically decreasing for the bear regime (so $\pi^\ast(\text{bear})=0/100$): the regime label genuinely moves the policy. The belief from \cref{eq:predict,eq:bayes} then mixes these two columns, so the deployed weight tilts continuously toward bonds as $\bel_t(\text{bear})$ rises.
+\paragraph{What we actually computed.} The action space is the $M{=}6$-point grid $\action=\{(w_S,1{-}w_S):w_S\in\{0,0.2,\dots,1\}\}$, so $Q^\ast$ is a $2\times 6$ table. The reward $R$ is built by Monte Carlo: for each regime we draw $5{,}000$ samples of the joint $(\text{SPY},\text{AGG})$ monthly return from that regime's empirical conditional distribution (regimes assigned by the HMM \emph{in standardised observation space}, matching calibration) and average $U_2(1+\mathbf a^\top\mathbf r)$. At $\gamma{=}2$ the resulting $Q^\ast$ increases in the stock weight for the bull regime (so $\pi^\ast(\text{bull})=100/0$) and decreases for the bear regime (so $\pi^\ast(\text{bear})=0/100$): the regime label genuinely moves the policy, and the belief then mixes these two columns so the deployed weight tilts toward bonds as $\bel_t(\text{bear})$ rises.
 
 \subsection{Baseline strategies}\label{sec:baselines}
 
 We benchmark QMDP against eleven baselines spanning the academic and practitioner consensus. Each takes asset returns (plus belief and regime moments where needed) and returns a per-date weight matrix. \Cref{tab:baselines} lists them with the canonical reference.
 
-\begin{table}[H]\centering\small\renewcommand{\arraystretch}{1.05}
+\begin{table}[H]\centering\small\renewcommand{\arraystretch}{1.0}
 \caption{Baseline strategies benchmarked against QMDP.}\label{tab:baselines}
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{p{3.6cm} p{8.1cm} l}
@@ -245,7 +251,7 @@ Walk-forward over 271 monthly observations 2003-10-31 to 2026-04-30. Monthly reb
 \section{Data}\label{sec:data}
 %================================================
 
-All inputs are public. Headline observations: \textbf{VIX} (FRED:VIXCLS) and the \textbf{10Y--3M Treasury spread} (FRED:T10Y3M). \textbf{SPY} and \textbf{AGG} are pulled from Yahoo Finance and converted to monthly log returns; AGG's September 2003 inception sets the panel start. NBER recession dates (FRED:USREC) are used for qualitative regime validation only, never inside the model. Eight extension channels (used in \Cref{sec:multifeature}) are fetched from FRED: \textbf{T10Y2Y} (10Y--2Y yield-curve slope), \textbf{NFCI} (Chicago Fed National Financial Conditions Index), \textbf{STLFSI4} (St.\ Louis Fed Financial Stress Index), \textbf{UMCSENT} (consumer sentiment), \textbf{ICSA} (initial jobless claims), \textbf{DTWEXBGS} (trade-weighted USD), \textbf{DCOILWTICO} (WTI oil), \textbf{DFF} (federal funds rate). The ICE BofA HY OAS series (BAMLH0A0HYM2) was specified in our proposal but the FRED public CSV endpoint truncates it to $\sim 3$ years; NFCI and STLFSI4 substitute. After alignment, the panel has 271 usable monthly rows.
+All inputs are public. Headline observations: \textbf{VIX} (FRED:VIXCLS) and the \textbf{10Y--3M Treasury spread} (FRED:T10Y3M). \textbf{SPY} and \textbf{AGG} are pulled from Yahoo Finance and converted to monthly log returns; AGG's September 2003 inception sets the panel start. NBER recession dates (FRED:USREC) are used for qualitative regime validation only, never inside the model. Eight extension channels (used in \Cref{sec:multifeature}) are fetched from FRED: the 10Y--2Y yield-curve slope (T10Y2Y), the Chicago Fed NFCI and St.\ Louis Fed STLFSI4 financial-stress indices, consumer sentiment (UMCSENT), initial jobless claims (ICSA), the trade-weighted USD (DTWEXBGS), WTI oil (DCOILWTICO), and the federal funds rate (DFF). The HY OAS series specified in our proposal is truncated to $\sim 3$ years by the public FRED CSV endpoint, so NFCI and STLFSI4 substitute. After alignment, the panel has 271 usable monthly rows.
 
 %================================================
 \section{Results}\label{sec:results}
@@ -255,7 +261,7 @@ All inputs are public. Headline observations: \textbf{VIX} (FRED:VIXCLS) and the
 
 \Cref{tab:horserace} reports the full 2003--2026 backtest of all twelve strategies, sorted by Sharpe. \Cref{fig:baselines} shows cumulative wealth and drawdowns.
 
-\begin{table}[H]\centering\small\setlength{\tabcolsep}{5pt}\renewcommand{\arraystretch}{1.05}
+\begin{table}[H]\centering\small\setlength{\tabcolsep}{5pt}\renewcommand{\arraystretch}{1.0}
 \caption{Twelve-strategy backtest 2003--2026, 5\,bps tx cost, monthly rebalance.}\label{tab:horserace}
 \begin{tabular}{l rrrrrrr}
 \toprule
@@ -278,24 +284,24 @@ Vol-target 60/40         & 7.50\%           & 10.14\% & 0.77          & 1.12    
 \end{table}
 
 \begin{figure}[H]\centering
-\begin{subfigure}{0.49\linewidth}
+\begin{subfigure}{0.44\linewidth}
 \includegraphics[width=\linewidth]{../figures/baselines_equity.pdf}
 \caption{Equity curves (log scale).}\label{fig:baselines-equity}
 \end{subfigure}\hfill
-\begin{subfigure}{0.49\linewidth}
+\begin{subfigure}{0.44\linewidth}
 \includegraphics[width=\linewidth]{../figures/baselines_drawdown.pdf}
 \caption{Drawdown timeseries.}\label{fig:baselines-dd}
 \end{subfigure}
 \caption{All twelve strategies, \$1 invested 2003-10-31, 5\,bps cost. The QMDP regime overlay (Sharpe 1.18) finishes 4th of twelve, beating the static 60/40 (0.81) and the other classical and risk-based baselines, and essentially tying the HMM-conditional mean-variance strategy (1.20). Because it rotates to bonds in the bear regime it cuts maximum drawdown to $-14\%$ versus the static benchmark's $-34\%$. The practitioner-consensus trend rule (Faber, 1.68) still leads.}\label{fig:baselines}
 \end{figure}
 
-\paragraph{Three findings.} \emph{First,} the QMDP regime overlay is a genuinely competitive risk-adjusted allocator: Sharpe~1.18 (4th of twelve), beating the static~60/40 (0.81), the 1/N benchmark (0.84), risk parity (0.91), and Markowitz (0.82), with less than half their drawdown. \emph{Second,} QMDP essentially ties the HMM-conditional mean-variance baseline (1.18 vs.\ 1.20): the two ways of using the same HMM signal land in the same place, so the belief-to-$Q^\ast$ projection in \cref{eq:qmdp} preserves the regime information rather than discarding it. \emph{Third,} the practitioner-consensus rule (Faber 10-month SMA, Sharpe 1.68) still leads, consistent with the Hurst--Ooi--Pedersen \cite{hurst2017} ``Century of Evidence'' finding; a decision-theoretic regime overlay is competitive with, but does not overtake, simple trend-following on this sample.
+\paragraph{Three findings.} \emph{First,} the QMDP overlay is a genuinely competitive risk-adjusted allocator: Sharpe~1.18 (4th of twelve), beating the static 60/40 (0.81) and every classical and risk-based baseline at less than half their drawdown. \emph{Second,} it essentially ties the HMM-conditional mean-variance baseline (1.20): the two ways of using the same HMM signal land in the same place, so the belief-to-$Q^\ast$ projection in \cref{eq:qmdp} preserves the regime information rather than discarding it. \emph{Third,} the practitioner-consensus trend rule (Faber, 1.68) still leads, consistent with the Hurst--Ooi--Pedersen \cite{hurst2017} ``Century of Evidence'' finding: a decision-theoretic regime overlay is competitive with, but does not overtake, simple trend-following on this sample.
 
 \subsection{Regime differentiation is robust across CRRA}\label{sec:gamma-sweep}
 
-We sweep $\gamma\in\{1,2,3,5,8,10,15,20\}$ and re-solve the MDP for each (\Cref{tab:gamma-policy}). At \emph{every} risk-aversion level the optimal policy is regime-differentiated: aggressive in the bull regime, fully defensive (100\% bonds) in the bear regime. Far from collapsing, the regime label moves the policy even at the canonical $\gamma{=}2$. Raising $\gamma$ tempers the bull-regime equity weight (from 100/0 toward 60/40 by $\gamma{=}20$) while the bear-regime weight stays pinned at 0/100; the backtest Sharpe rises from 1.18 at $\gamma{=}2$ to a plateau of $\approx1.22$ for $\gamma\ge15$.
+We sweep $\gamma\in\{1,2,3,5,8,10,15,20\}$ and re-solve the MDP for each (\Cref{tab:gamma-policy}). At \emph{every} risk-aversion level the optimal policy is regime-differentiated: aggressive in the bull regime, fully defensive (100\% bonds) in the bear regime, including at the canonical $\gamma{=}2$. Raising $\gamma$ tempers the bull-regime equity weight (from 100/0 toward 60/40 by $\gamma{=}20$) while the bear weight stays pinned at 0/100; backtest Sharpe rises from 1.18 at $\gamma{=}2$ to a plateau of $\approx1.22$ for $\gamma\ge15$.
 
-\begin{table}[H]\centering\small\setlength{\tabcolsep}{6pt}\renewcommand{\arraystretch}{1.05}
+\begin{table}[H]\centering\small\setlength{\tabcolsep}{6pt}\renewcommand{\arraystretch}{1.0}
 \caption{$\pi^\ast(s)$ (stock/bond weight) as a function of regime $s$ and CRRA $\gamma$. The two rows differ in every column: the regime label genuinely moves the optimal policy.}\label{tab:gamma-policy}
 \begin{tabular}{lccccccc}
 \toprule
@@ -311,7 +317,7 @@ Bear & 0/100 & 0/100 & 0/100 & 0/100 & 0/100 & 0/100 & 0/100 \\
 
 Guidolin and Timmermann \cite{guidolin2007} warn that narrow observation sets can fail to differentiate regime-conditional policies. We test directly whether our regime differentiation is an artifact of the two-channel baseline or a robust feature: re-fit the 2-state HMM (train-window calibration, no look-ahead) with five progressively richer observation cohorts at $\gamma{=}2$ and re-solve the MDP for each.
 
-\begin{table}[H]\centering\small\setlength{\tabcolsep}{5pt}\renewcommand{\arraystretch}{1.05}
+\begin{table}[H]\centering\small\setlength{\tabcolsep}{5pt}\renewcommand{\arraystretch}{1.0}
 \caption{Observation-cohort study. ``Differs?'' is true iff $\pi^\ast(\text{bull})\neq\pi^\ast(\text{bear})$. Every cohort differentiates; the +Stress cohort attains the lowest BIC.}\label{tab:cohort}
 \begin{tabular}{l l ccc c}
 \toprule
@@ -326,10 +332,10 @@ Guidolin and Timmermann \cite{guidolin2007} warn that narrow observation sets ca
 \end{tabular}
 \end{table}
 
-Regime differentiation is robust to the observation set: even the two-channel baseline produces a fully defensive bear-regime policy, and adding the Chicago Fed NFCI and St.\ Louis Fed STLFSI4 stress indices (cohort~3) both preserves that differentiation and attains the lowest BIC, confirming Guidolin--Timmermann's prediction that financial-stress channels sharpen the regime model. The conclusion is the opposite of a fragility result: the policy's regime-awareness does not hinge on any one observation choice.
+Regime differentiation is robust to the observation set: even the two-channel baseline produces a fully defensive bear-regime policy, and adding the Chicago Fed NFCI and St.\ Louis Fed STLFSI4 stress indices (cohort~3) both preserves that differentiation and attains the lowest BIC, confirming Guidolin--Timmermann's prediction that financial-stress channels sharpen the regime model. The policy's regime-awareness does not hinge on any one observation choice.
 
 \begin{figure}[H]\centering
-\includegraphics[width=0.92\linewidth]{../figures/cohort_regime_timelines.pdf}
+\includegraphics[width=0.66\linewidth]{../figures/cohort_regime_timelines.pdf}
 \caption{Smoothed posterior $P(\text{bear regime})$ under three observation cohorts; NBER recessions shaded grey. All three cohorts track the major stress episodes; cohort~3 (\textbf{+NFCI, +STLFSI4}) produces the sharpest, highest-confidence bear spikes (cleanly bracketing every NBER recession plus the 2015--16 oil/China episode and the 2022 inflation drawdown), consistent with its lowest BIC. Cohort~5 (kitchen sink) begins to over-fit.}\label{fig:cohort}
 \end{figure}
 
@@ -337,7 +343,7 @@ Regime differentiation is robust to the observation set: even the two-channel ba
 
 The headline backtest fits the HMM once on 2003--2014 and holds it fixed. Following Nystrup et al.\ \cite{nystrup2018} we test whether periodic refit further improves the overlay (\Cref{tab:walk-forward}; this pipeline uses a slightly more conservative QMDP variant, so its fixed-window Sharpe of 0.96 sits below the headline 1.18; the comparison of interest is fixed vs.\ refit \emph{within} the pipeline).
 
-\begin{table}[H]\centering\small\setlength{\tabcolsep}{6pt}\renewcommand{\arraystretch}{1.05}
+\begin{table}[H]\centering\small\setlength{\tabcolsep}{6pt}\renewcommand{\arraystretch}{1.0}
 \caption{Walk-forward refit results. Same panel, 5\,bps cost, $\gamma{=}2$.}\label{tab:walk-forward}
 \begin{tabular}{l rrrrrr}
 \toprule
@@ -353,14 +359,14 @@ HMM-MV expanding window      & 5.32\% & 5.61\%  & 0.95 & 1.52 & $-16.8\%$ & 0.32
 \end{tabular}
 \end{table}
 
-Expanding-window refit is monotonically the best cadence: within this pipeline it lifts Sharpe from 0.96 (fixed) to \textbf{1.08}, and, more robustly, cuts maximum drawdown from $-34\%$ to $\mathbf{-16.5\%}$ (more than halving it) and nearly triples Calmar from 0.29 to \textbf{0.60}. The drawdown and Calmar improvements are the durable finding: keeping the regime parameters current lets the overlay react to stress it was not trained on.
+Expanding-window refit is the best cadence: within this pipeline it lifts Sharpe from 0.96 (fixed) to \textbf{1.08}, cuts maximum drawdown from $-34\%$ to $\mathbf{-16.5\%}$ (more than halving it), and nearly triples Calmar from 0.29 to \textbf{0.60}. The drawdown and Calmar gains are the durable finding: keeping the regime parameters current lets the overlay react to stress it was not trained on.
 
 \subsection{Robustness 3: subperiods}\label{sec:subperiod}
 
-We split the sample into three economically meaningful sub-periods and re-run the horse race (\Cref{fig:subperiod}). The QMDP overlay is solid in all three: Sharpe \textbf{1.16} in Period~A (2003--2010, the GFC era: precisely where a regime-aware model should help, and where it does), 1.30 in Period~B (2011--2019), and 1.17 in Period~C (2020--2026). It beats the static 60/40 in every sub-period (the static's Period~A Sharpe is only 0.50). Faber still leads each column (1.41 / 2.01 / 1.45), but QMDP is consistently mid-pack and never the artifact-driven laggard it appeared to be before the belief filter was applied in the correct observation space.
+We split the sample into three economically meaningful sub-periods and re-run the horse race (\Cref{fig:subperiod}). The QMDP overlay is solid in all three: Sharpe \textbf{1.16} in Period~A (2003--2010, the GFC era, where a regime-aware model should help most), 1.30 in Period~B (2011--2019), and 1.17 in Period~C (2020--2026), beating the static 60/40 in every sub-period (its Period~A Sharpe is only 0.50). Faber still leads each column (1.41 / 2.01 / 1.45), but QMDP is consistently mid-pack and competitive.
 
 \begin{figure}[H]\centering
-\includegraphics[width=0.78\linewidth]{../figures/subperiod_sharpe_heatmap.pdf}
+\includegraphics[width=0.48\linewidth]{../figures/subperiod_sharpe_heatmap.pdf}
 \caption{Sharpe heatmap across three sub-periods. Faber leads every column; the QMDP overlay is solid throughout (A 1.16, B 1.30, C 1.17) and beats the static 60/40 in every period, most notably in the GFC-era Period~A (1.16 vs.\ 0.50).}\label{fig:subperiod}
 \end{figure}
 
@@ -368,16 +374,13 @@ We split the sample into three economically meaningful sub-periods and re-run th
 \section{Discussion and Conclusions}\label{sec:conclusions}
 %================================================
 
-The narrative that emerges from \Cref{sec:horserace,sec:gamma-sweep,sec:multifeature,sec:walk-forward,sec:subperiod} is coherent: a correctly-specified POMDP regime overlay is a genuinely competitive risk-adjusted allocator. At the canonical $\gamma{=}2$ the underlying MDP is regime-differentiated (100\% equity in the bull regime, 100\% bonds in the bear regime), the recursive belief filter mixes those two columns into a continuously regime-aware weight, and the resulting QMDP policy attains Sharpe~1.18: beating the static 60/40 (0.81) and the classical risk-based baselines, tying HMM-conditional mean-variance (1.20), and cutting maximum drawdown from $-34\%$ to $-14\%$. This regime differentiation is not an artifact of any single modelling choice: it holds across CRRA levels (\Cref{tab:gamma-policy}), across observation cohorts (\Cref{tab:cohort}), and across three economically distinct sub-periods (\Cref{fig:subperiod}), and expanding-window walk-forward refit (\Cref{tab:walk-forward}) more than halves the drawdown again.
+The picture from \Cref{sec:horserace,sec:gamma-sweep,sec:multifeature,sec:walk-forward,sec:subperiod} is coherent: a correctly-specified POMDP regime overlay is a genuinely competitive risk-adjusted allocator. At the canonical $\gamma{=}2$ the underlying MDP is regime-differentiated, the recursive belief filter blends its two columns into a continuously regime-aware weight, and the resulting QMDP policy (Sharpe~1.18) beats the static 60/40 and the classical risk-based baselines while roughly halving drawdown. This differentiation is not an artifact of any single modelling choice: it holds across CRRA levels (\Cref{tab:gamma-policy}), observation cohorts (\Cref{tab:cohort}), and three economically distinct sub-periods (\Cref{fig:subperiod}), and expanding-window refit (\Cref{tab:walk-forward}) more than halves the drawdown again.
 
-Our findings align with the literature: Guidolin and Timmermann \cite{guidolin2007} predict that financial-stress channels sharpen the regime model (our +Stress cohort attains the lowest BIC); Nystrup et al.\ \cite{nystrup2018} predict that expanding-window refit improves a regime overlay (it does, chiefly on drawdown); and Ang and Bekaert \cite{ang2002} caution that gains in a two-risky-asset universe with no risk-free leg are bounded, consistent with our overlay being competitive but not dominant against trend-following. We position the contribution precisely within Powell's \cite{powell2019} four-class taxonomy: QMDP is a value-function approximation (the MDP $Q^\ast$ as a linear functional of the belief) composed with a one-step direct lookahead, derived here from the belief-space Bellman equation rather than asserted.
+Our findings align with the literature: Guidolin and Timmermann \cite{guidolin2007} predict that financial-stress channels sharpen the regime model (our +Stress cohort attains the lowest BIC), and Ang and Bekaert \cite{ang2002} caution that gains in a two-risky-asset universe with no risk-free leg are bounded, consistent with our overlay being competitive but not dominant against trend-following.
 
-\paragraph{Three extensions.} \emph{(i)~CVaR-penalised reward.} Replace the CRRA reward with $R(s,\mathbf{a})=\E[\mathbf{a}^\top\mathbf{r}\mid s]-\kappa\,\mathrm{CVaR}_\alpha[\mathbf{a}^\top\mathbf{r}\mid s]$ to penalise bear-regime tail risk directly; a one-line change to the reward function that we expect to narrow the gap to trend-following further. \emph{(ii)~Point-based VI \cite{pineau2003}.} Maintain explicit $\alpha$-vectors over a small reachable-belief set for a tight upper bound on QMDP; negligible cost on a 1-D simplex. \emph{(iii)~Off-policy MC + Double Q-learning \cite{precup2000,vanhasselt2010}.} A genuinely model-free cross-check that does not assume the QMDP transition matrix; agreement with our model-based $Q^\ast$ would corroborate the calibration.
+\paragraph{Three extensions.} \emph{(i)~CVaR-penalised reward}: replace the CRRA reward with $R(s,\mathbf{a})=\E[\mathbf{a}^\top\mathbf{r}\mid s]-\kappa\,\mathrm{CVaR}_\alpha[\mathbf{a}^\top\mathbf{r}\mid s]$ to penalise bear-regime tail risk directly, a one-line change we expect to narrow the gap to trend-following. \emph{(ii)~Point-based VI \cite{pineau2003}}: maintain explicit $\alpha$-vectors over a small reachable-belief set for a tighter bound than QMDP, at negligible cost on a 1-D simplex. \emph{(iii)~Off-policy MC with Double Q-learning \cite{precup2000,vanhasselt2010}}: a model-free cross-check that does not assume the QMDP transition matrix; agreement with our $Q^\ast$ would corroborate the calibration.
 
-\paragraph{Honest verdict.} A correctly-applied POMDP regime overlay (QMDP on a belief recursively filtered from VIX and the term spread) beats the static 60/40 on every risk-adjusted metric and across every sub-period we tested, while roughly tying the best model-based mean-variance alternative. It does \emph{not} overtake the practitioner-consensus trend rule (Faber's 10-month SMA, Sharpe~1.68) on our 2003--2026 sample, and we make no such claim. What we do claim is sharper than a Sharpe number: the POMDP is the right minimum decision-theoretic tool here; the belief state is genuinely recursive and demonstrably regime-tracking (\Cref{fig:belief}); the QMDP rule follows from the belief-space Bellman equation as an explicit one-step value-function approximation; and the regime-aware policy that results is robust across risk aversion, observations, sub-periods, and refit cadence.
-
-\bigskip\hrule\smallskip
-\noindent\textbf{Reproducibility.} All code, raw data (14 public CSVs from FRED and Yahoo), fitted HMMs, and figures are publicly available: \href{https://github.com/takakhoo/ENGS177_Final_Project}{\textbf{Full Reproducible Experiments}}. The end-to-end pipeline runs in under five minutes on a laptop, and a companion technical report provides detailed mathematical walkthroughs, code listings, a symbol glossary, and full per-experiment results.
+\paragraph{Honest verdict.} A correctly-applied POMDP regime overlay beats the static 60/40 on every risk-adjusted metric and in every sub-period, while roughly tying the best model-based mean-variance alternative; it does \emph{not} overtake the practitioner-consensus trend rule (Faber, Sharpe~1.68), and we make no such claim. The contribution is sharper than a Sharpe number: the POMDP is the right minimum decision-theoretic tool, the belief state is genuinely recursive and regime-tracking (\Cref{fig:belief}), the QMDP rule is derived from the belief-space Bellman equation rather than asserted, and the resulting policy is robust across risk aversion, observations, sub-periods, and refit cadence. All code, data, fitted HMMs, and figures are public: \href{https://github.com/takakhoo/ENGS177_Final_Project}{\textbf{Full Reproducible Experiments}}.
 
 %================================================
 \begin{thebibliography}{99}\small\setlength{\itemsep}{0pt}
