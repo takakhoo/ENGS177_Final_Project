@@ -93,7 +93,7 @@ A long-only investor must choose, every month, the weights of a portfolio of two
 \section{Background}\label{sec:background}
 %================================================
 
-\paragraph{Regime switching in finance.} The Markov-switching model is due to Hamilton \cite{hamilton1989} who applied a two-state model to U.S.\ GDP. Ang and Bekaert \cite{ang2002} demonstrated that ignoring regimes produces welfare losses in international allocation, but their gain mechanism is concentrated in the cash-switching margin: ``costs of ignoring regimes are small for all-equity portfolios.'' Guidolin and Timmermann \cite{guidolin2007} formalised multi-asset allocation under a 4-state HMM and reported certainty-equivalent gains of 1.5--3.0\% per annum. Nystrup et al.\ \cite{nystrup2018} address the look-ahead-bias problem via online walk-forward refit. Tu \cite{tu2010} examines whether regime switching matters once model, parameter, and regime uncertainty are jointly accounted for; the answer is qualified. A central methodological point of our study is that whether the regime label moves the optimal policy depends critically on the regime-conditional reward being estimated in the same space the HMM is calibrated in: with a correctly-applied belief filter, the label moves the policy even at the canonical low risk aversion ($\gamma{=}2$), a two-risky-asset universe notwithstanding.
+\paragraph{Regime switching in finance.} The Markov-switching model is due to Hamilton \cite{hamilton1989} who applied a two-state model to U.S.\ GDP. Ang and Bekaert \cite{ang2002} demonstrated that ignoring regimes produces welfare losses in international allocation, but their gain mechanism is concentrated in the cash-switching margin: ``costs of ignoring regimes are small for all-equity portfolios.'' Guidolin and Timmermann \cite{guidolin2007} formalised multi-asset allocation under a 4-state HMM and reported certainty-equivalent gains of 1.5--3.0\% per annum. Nystrup et al.\ \cite{nystrup2018} address the look-ahead-bias problem via online walk-forward refit. Tu \cite{tu2010} examines whether regime switching matters once model, parameter, and regime uncertainty are jointly accounted for; the answer is qualified. A central methodological point of our study is simple: whether the regime label changes the optimal policy depends on estimating the regime-conditional reward in the same standardised space the HMM was calibrated in. When we do this correctly, the label moves the policy even at the canonical low risk aversion ($\gamma{=}2$), despite our universe holding only two risky assets and no risk-free leg.
 
 \paragraph{POMDP framework.} A Partially Observable MDP \cite{kaelbling1998} assumes the agent observes only a noisy function of the latent state and maintains a probability distribution (belief) over the state. Exact POMDP solution is PSPACE-hard; the QMDP approximation \cite{littman1995} projects the belief onto the action-value function of the fully-observable MDP. We use QMDP because (i)~it is exact when the belief is a Dirac measure, (ii)~it reduces to a standard infinite-horizon MDP solver, and (iii)~in our setting there is no action that improves observability of the regime (we observe VIX and the term spread regardless of allocation), so the well-known weakness of QMDP (failure to motivate information-gathering actions \cite{hauskrecht2000}) does not bind. Point-based value iteration \cite{pineau2003} is a tighter alternative but unnecessary on our 2-state model with a 1-dimensional belief simplex.
 
@@ -131,31 +131,51 @@ The predict step advances last month's belief through the regime dynamics (it nu
 \end{figure}
 
 \begin{figure}[H]\centering
-\begin{tikzpicture}[node distance=8mm and 12mm,>=Stealth,thick,
-  data/.style={cylinder,draw,shape border rotate=90,aspect=0.25,fill=gray!10,font=\scriptsize,minimum height=8mm,minimum width=14mm},
-  proc/.style={ellipse,draw=cb,fill=cb!10,minimum size=7mm,font=\scriptsize},
-  decision/.style={diamond,draw=cg,fill=cg!10,minimum size=7mm,font=\scriptsize,aspect=2},
-  output/.style={rectangle,draw=cy,fill=cy!20,minimum size=7mm,font=\scriptsize},
+\begin{tikzpicture}[
+  >=Stealth, thick, font=\scriptsize, align=center,
+  data/.style ={cylinder, shape border rotate=90, aspect=0.20, draw=black!65,
+                fill=gray!10, minimum width=16mm, minimum height=11mm, inner sep=1pt},
+  proc/.style ={ellipse, draw=cb, fill=cb!10, minimum width=16mm, minimum height=10mm, inner sep=1pt},
+  art/.style  ={rectangle, rounded corners=2pt, draw=cy!85!black, fill=cy!20,
+                minimum width=14mm, minimum height=10mm, inner sep=2pt},
+  dec/.style  ={diamond, draw=cg!75!black, fill=cg!15, aspect=1.9, inner sep=1pt,
+                minimum width=20mm, minimum height=13mm},
+  elab/.style ={midway, font=\scriptsize, fill=white, inner sep=1.5pt},
 ]
-\node[data] (raw) {FRED + Yahoo};
-\node[data,right=of raw] (panel) {Monthly panel};
-\node[proc,right=of panel] (hmm) {HMM};
-\node[proc,right=of hmm] (mdp) {MDP};
-\node[output,right=of mdp] (q) {$Q^\ast$};
-\node[proc,below=of panel] (filter) {Bayes filter};
-\node[decision,below=of mdp] (qmdp) {QMDP};
-\node[output,right=of qmdp] (back) {Backtest};
-\draw[->] (raw)--(panel);
-\draw[->] (panel)--(hmm) node[midway,above,font=\scriptsize]{Baum-W};
-\draw[->] (hmm)--(mdp) node[midway,above,font=\scriptsize]{$T,\mu,\Sigma$};
-\draw[->] (mdp)--(q) node[midway,above,font=\scriptsize]{VI/PI};
-\draw[->] (panel.south) |- (filter.east);
-\draw[->] (hmm.south) -- (filter.north east);
-\draw[->] (filter) -| (qmdp) node[midway,below,font=\scriptsize]{$\bel_t$};
-\draw[->] (q) |- (qmdp);
-\draw[->] (qmdp)--(back);
+% ---- Top row: offline planning (calibrate the model, solve the MDP once) ----
+\node[data] (raw)                {FRED\,/\,Yahoo\\CSVs};
+\node[data, right=16mm of raw]   (panel) {monthly\\panel};
+\node[proc, right=20mm of panel] (hmm)   {HMM};
+\node[proc, right=20mm of hmm]   (mdp)   {MDP};
+\node[art,  right=18mm of mdp]   (q)     {$Q^{\ast}(s,\mathbf{a})$};
+
+\draw[->] (raw)   -- (panel);
+\draw[->] (panel) -- (hmm) node[elab, above]{Baum--Welch};
+\draw[->] (hmm)   -- (mdp) node[elab, above]{$T,\boldsymbol{\mu},\boldsymbol{\Sigma}$};
+\draw[->] (mdp)   -- (q)   node[elab, above]{VI\,/\,PI};
+
+% ---- Bottom row: online execution (filter the belief, act, every month) ----
+\node[proc, below=22mm of hmm] (filter) {Bayes\\filter};
+\node[dec,  below=22mm of mdp] (qmdp)   {QMDP};
+\node[art,  below=22mm of q]   (back)   {backtest\\wealth};
+
+\draw[->] (filter) -- (qmdp) node[elab, above]{belief $\bel_t$};
+\draw[->] (qmdp)   -- (back) node[elab, above]{weights $\mathbf{a}_t$};
+
+% ---- Vertical links: offline artifacts feed the online loop ----
+\draw[->] (hmm) -- (filter) node[elab, right]{$T,\,O(\mathbf{o}\mid s)$};
+\draw[->] (panel.south) |- (filter.west) node[elab, below, pos=0.7]{new obs $\mathbf{o}_t$};
+\draw[->] (q) -- (qmdp) node[elab, right]{$Q^{\ast}$};
+
+% ---- Phase brackets (offline vs online) ----
+\begin{scope}[on background layer]
+  \node[draw=cb!35, dashed, rounded corners, inner sep=4mm, fit=(raw)(panel)(hmm)(mdp)(q)] (offbox) {};
+  \node[draw=cg!45, dashed, rounded corners, inner sep=4mm, fit=(filter)(qmdp)(back)] (onbox) {};
+\end{scope}
+\node[font=\scriptsize\itshape, cb!65!black, anchor=west] at (offbox.north west) {Offline: fit the model and solve the MDP once};
+\node[font=\scriptsize\itshape, cg!55!black, anchor=west] at (onbox.south west) {Online: filter the belief and act, every month};
 \end{tikzpicture}
-\caption{End-to-end pipeline: raw FRED + Yahoo CSVs $\to$ monthly aligned panel $\to$ Gaussian HMM fit by Baum--Welch $\to$ underlying MDP solved by VI/PI $\to$ $Q^\ast$ table; in parallel, monthly observations stream through the Bayesian filter to produce belief $\bel_t$, which the QMDP rule combines with $Q^\ast$ to choose weights.}\label{fig:pipeline}
+\caption{End-to-end pipeline. \textbf{Offline (top):} raw FRED and Yahoo CSVs are aligned into a monthly panel; a Gaussian HMM is fit by Baum--Welch; its transition matrix and emissions define the underlying fully-observable MDP, which we solve by value iteration and policy iteration to obtain the action-value table $Q^{\ast}(s,\mathbf{a})$. \textbf{Online (bottom):} each month the new observation $\mathbf{o}_t$ enters the recursive Bayes filter (using the same $T$ and emissions $O$), producing the belief $\bel_t$; the QMDP rule combines $\bel_t$ with $Q^{\ast}$ to choose the portfolio weights $\mathbf{a}_t$, which drive the backtest wealth.}\label{fig:pipeline}
 \end{figure}
 
 \subsection{HMM calibration via Baum--Welch}\label{sec:hmm}
@@ -170,7 +190,7 @@ The underlying MDP's optimal value function satisfies the Bellman equation $V^\a
 On our calibrated MDP with $\lambda{=}0.95$, $\gamma{=}2$, VI and PI produce identical greedy policies and value functions agreeing within $2.6\times 10^{-6}$ component-wise, the empirical realisation of the contraction-mapping equivalence~\cite{puterman}.
 \end{proposition}
 
-\paragraph{From the belief-space Bellman equation to QMDP.} The POMDP is equivalent to a fully-observable MDP whose state is the belief $\bel$ (the \emph{belief MDP}). Its optimal value obeys
+\paragraph{From the belief-space Bellman equation to QMDP.} The intuition is the one from lecture: if we \emph{knew} the regime we would simply read the best action off the MDP table, $\argmax_a Q^\ast(s,a)$; since we only hold a belief $\bel$ over the regime, QMDP scores each action by its belief-weighted MDP action-value and picks the best. We now show this rule is not an ad-hoc average but the exact one-step truncation of the POMDP's own Bellman equation. The POMDP is equivalent to a fully-observable MDP whose state is the belief $\bel$ (the \emph{belief MDP}). Its optimal value obeys
 \begin{equation}\label{eq:belief-bellman}
 V^\ast(\bel)=\max_{\mathbf{a}\in\action}\Bigl\{\underbrace{\textstyle\sum_s \bel(s)R(s,\mathbf{a})}_{R(\bel,\mathbf{a})}
 +\lambda\sum_{\mathbf{o}}\Prb(\mathbf{o}\mid\bel,\mathbf{a})\,V^\ast\!\bigl(\bel'(\bel,\mathbf{a},\mathbf{o})\bigr)\Bigr\},
@@ -357,7 +377,7 @@ Our findings align with the literature: Guidolin and Timmermann \cite{guidolin20
 \paragraph{Honest verdict.} A correctly-applied POMDP regime overlay (QMDP on a belief recursively filtered from VIX and the term spread) beats the static 60/40 on every risk-adjusted metric and across every sub-period we tested, while roughly tying the best model-based mean-variance alternative. It does \emph{not} overtake the practitioner-consensus trend rule (Faber's 10-month SMA, Sharpe~1.68) on our 2003--2026 sample, and we make no such claim. What we do claim is sharper than a Sharpe number: the POMDP is the right minimum decision-theoretic tool here; the belief state is genuinely recursive and demonstrably regime-tracking (\Cref{fig:belief}); the QMDP rule follows from the belief-space Bellman equation as an explicit one-step value-function approximation; and the regime-aware policy that results is robust across risk aversion, observations, sub-periods, and refit cadence.
 
 \bigskip\hrule\smallskip
-\noindent\textbf{Reproducibility.} All code, raw data (745\,KB across 11 CSVs), fitted HMMs, intermediate artifacts, and figures are committed to \href{https://github.com/takakhoo/ENGS177_Final_Project}{\nolinkurl{takakhoo/ENGS177_Final_Project}}. The end-to-end pipeline runs in under five minutes on a laptop. An accompanying 35-page extended technical report (\texttt{report/extended\_report.pdf}) provides detailed mathematical walkthroughs, code listings, a glossary of all symbols, and full per-experiment results.
+\noindent\textbf{Reproducibility.} All code, raw data (14 public CSVs from FRED and Yahoo), fitted HMMs, intermediate artifacts, and figures are committed to \href{https://github.com/takakhoo/ENGS177_Final_Project}{\nolinkurl{takakhoo/ENGS177_Final_Project}}. The end-to-end pipeline runs in under five minutes on a laptop. An accompanying extended technical report (\texttt{report/extended\_report.pdf}) provides detailed mathematical walkthroughs, code listings, a glossary of all symbols, and full per-experiment results.
 
 %================================================
 \begin{thebibliography}{99}\small\setlength{\itemsep}{0pt}
