@@ -11,6 +11,11 @@ __pycache__/
 *.toc
 *.nav
 *.snm
+*.fls
+*.fdb_latexmk
+*.synctex.gz
+*.bbl
+*.blg
 # Note: data/raw/*.csv, data/processed/*.pkl, data/processed/monthly.csv,
 # and results/Q_star.npy are intentionally COMMITTED so teammates can run
 # the full pipeline end-to-end without first hitting FRED/Yahoo. They are
